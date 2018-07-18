@@ -1,3 +1,4 @@
+#-*- coding:utf-8 -*-
 from cnn import convolution2d
 import tensorflow as tf
 import numpy as np
@@ -83,31 +84,98 @@ def smoothL1(x, sigma):
 
     return tf.where(conditional, close, far)
 
+def transform(layer):
+    shape = tf.shape(layer)
+    d = shape[3] / 9 # RCN CLS 9 *2 , RCN BBOX 9 * 4
+    layer = tf.transpose(layer, [0, 3, 1, 2])
+    layer = tf.reshape(layer, [shape[0], d, shape[3] // 4 * shape[1], shape[2]])
+    layer = tf.transpose(layer, [0, 2, 3, 1])
+    layer = tf.reshape(layer, [-1, d])
 
-def rpn_bbox_loss(rpn_bbox_pred, rpn_bbox_targets, rpn_inside_weights, rpn_outside_weights):
+    return layer
+
+
+
+
+
+def rpn_bbox_loss(rpn_bbox_pred, rpn_bbox_targets, rpn_inside_weights, rpn_outside_weights , rpn_labels):
+
+
     RPN_BBOX_LAMBDA = 10.0
+    def _bbox_transpose(layer):
+        shape = tf.shape(layer)
+        layer = tf.transpose(layer, [0, 3, 1, 2])
+        layer = tf.reshape(layer, [shape[0], 4, shape[3] // 4 * shape[1], shape[2]])
+        layer = tf.transpose(layer, [0, 2, 3, 1])
+        layer = tf.reshape(layer, [-1, 4])
+        return layer
+
+    def _extract_valid_bbox(layer):
+        layer  = tf.gather(layer , indices , name='rpn_bbox_targets')
+        layer = tf.reshape(rpn_bbox_targets , shape=[-1 , 4])
+        return layer
+
+
     with tf.variable_scope('rpn_bbox_loss'):
 
-        # Transposing
-        rpn_bbox_targets = tf.transpose(rpn_bbox_targets, [0, 2, 3, 1])
+
+        rpn_bbox_targets = tf.transpose(rpn_bbox_targets, [0, 2, 3, 1]) # (1, h, w, 36)
         rpn_inside_weights = tf.transpose(rpn_inside_weights, [0, 2, 3, 1])
         rpn_outside_weights = tf.transpose(rpn_outside_weights, [0, 2, 3, 1])
+        # Extract Indices
 
-        # Extract ROI
+        indices = tf.where(tf.not_equal(rpn_labels, -1))
+
+        """
+        # RPN BBOX TARGET
+        rpn_bbox_targets = _bbox_transpose(layer=rpn_bbox_targets)
+        rpn_bbox_targets = _extract_valid_bbox(layer=rpn_bbox_targets)
+        """
+        """
+        # RPN BBOX PREDICTION
+        shape = tf.shape(rpn_bbox_pred)
+        rpn_bbox_pred = tf.transpose(rpn_bbox_pred, [0, 3, 1, 2])
+        rpn_bbox_pred = tf.reshape(rpn_bbox_pred, [shape[0], 4, shape[3] // 4 * shape[1], shape[2]])
+        rpn_bbox_pred = tf.transpose(rpn_bbox_pred, [0, 2, 3, 1])
+        rpn_bbox_pred = tf.reshape(rpn_bbox_pred, [-1, 4])
+        rpn_bbox_pred  = tf.gather(rpn_bbox_pred , indices , name='rpn_bbox_pred')
+        rpn_bbox_pred = tf.reshape(rpn_bbox_pred , shape=[-1 , 4])
+
+        # RPN BBOX TARGET
         shape = tf.shape(rpn_bbox_targets)
         rpn_bbox_targets = tf.transpose(rpn_bbox_targets, [0, 3, 1, 2])
         rpn_bbox_targets = tf.reshape(rpn_bbox_targets, [shape[0], 4, shape[3] // 4 * shape[1], shape[2]])
         rpn_bbox_targets = tf.transpose(rpn_bbox_targets, [0, 2, 3, 1])
         rpn_bbox_targets = tf.reshape(rpn_bbox_targets, [-1, 4])
+        rpn_bbox_targets  = tf.gather(rpn_bbox_targets , indices , name='rpn_bbox_targets')
+        rpn_bbox_targets = tf.reshape(rpn_bbox_targets , shape=[-1 , 4])
 
+        # RPN INSIDE WEIGHT
+        shape = tf.shape(rpn_inside_weights)
+        rpn_inside_weights = tf.transpose(rpn_inside_weights, [0, 3, 1, 2])
+        rpn_inside_weights = tf.reshape(rpn_inside_weights, [shape[0], 4, shape[3] // 4 * shape[1], shape[2]])
+        rpn_inside_weights = tf.transpose(rpn_inside_weights, [0, 2, 3, 1])
+        rpn_inside_weights = tf.reshape(rpn_inside_weights, [-1, 4])
+        rpn_inside_weights  = tf.gather(rpn_inside_weights , indices , name='rpn_inside_weights')
+        rpn_inside_weights = tf.reshape(rpn_inside_weights , shape=[-1 , 4])
+
+        # RPN OUTSIDE WEIGHT
+        shape = tf.shape(rpn_outside_weights)
+        rpn_outside_weights = tf.transpose(rpn_outside_weights, [0, 3, 1, 2])
+        rpn_outside_weights = tf.reshape(rpn_outside_weights, [shape[0], 4, shape[3] // 4 * shape[1], shape[2]])
+        rpn_outside_weights = tf.transpose(rpn_outside_weights, [0, 2, 3, 1])
+        rpn_outside_weights = tf.reshape(rpn_outside_weights, [-1, 4])
+        rpn_outside_weights = tf.gather(rpn_outside_weights, indices, name='rpn_outside_weights')
+        rpn_outside_weights = tf.reshape(rpn_outside_weights, shape=[-1, 4])
+        """
         """
         rpn_cls_score_0 = tf.transpose(rpn_cls_score, [0, 3, 1, 2])  # (1, h, w, 18) ==>
         rpn_cls_score_1 = tf.reshape(rpn_cls_score_0, [shape[0], 2, shape[3] // 2 * shape[1], shape[2]])
         rpn_cls_score_2 = tf.transpose(rpn_cls_score_1, [0, 2, 3, 1])
         rpn_cls_score = tf.reshape(rpn_cls_score_2, [-1, 2])
         """
-
         # How far off was the prediction?
+
 
         diff = tf.multiply(rpn_inside_weights, rpn_bbox_pred - rpn_bbox_targets)
         diff_sL1 = smoothL1(diff, 3.0)
@@ -122,15 +190,14 @@ def rpn_bbox_loss(rpn_bbox_pred, rpn_bbox_targets, rpn_inside_weights, rpn_outsi
     return rpn_bbox_reg
 
 def optimizer(cost):
-    lr=0.01
+    lr=0.001
     train_op= tf.train.GradientDescentOptimizer(learning_rate=lr).minimize(cost)
     return train_op
-
 
 if __name__== '__main__':
     x_, im_dims, gt_boxes, phase_train=define_placeholder()
     top_conv, _feat_stride = simple_convnet(x_)
-    rpn_cls = rpn_cls_layer(top_conv)
+    rpn_cls = rpn_cls_layer(top_conv)k
     rpn_bbox = rpn_bbox_layer(top_conv)
 
 
