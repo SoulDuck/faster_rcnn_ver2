@@ -117,7 +117,7 @@ def anchor_target(rpn_cls_score, gt_boxes, im_dims, _feat_stride, anchor_scales)
     RPN_NEGATIVE_OVERLAP = 0.3
     RPN_POSITIVE_OVERLAP = 0.7
     RPN_FG_FRACTION =0.5
-    RPN_BATCHSIZE=30
+    RPN_BATCHSIZE=60
     RPN_BBOX_INSIDE_WEIGHTS=(1.0, 1.0, 1.0, 1.0)
     RPN_POSITIVE_WEIGHT = -1.0
 
@@ -176,6 +176,7 @@ def anchor_target(rpn_cls_score, gt_boxes, im_dims, _feat_stride, anchor_scales)
     # TODO: This "weights" business might be deprecated. Requires investigation
     """
 
+
     # 여기서부터는
     #bbox_targets = np.zeros((len(inds_inside), 4), dtype=np.float32) 이게 왜 필요하지
     #Regression 을 할수 있게 변형한다
@@ -185,7 +186,7 @@ def anchor_target(rpn_cls_score, gt_boxes, im_dims, _feat_stride, anchor_scales)
 
     # 나중에 사용할 bbox inside weight 와 outside weight 을 만든다
     bbox_inside_weights = np.zeros((len(inds_inside), 4), dtype=np.float32)
-    bbox_inside_weights[labels == 1, :] = np.array(RPN_BBOX_INSIDE_WEIGHTS) #(1.0, 1.0, 1.0, 1.0)
+    bbox_inside_weights[labels==1, :] = np.array(RPN_BBOX_INSIDE_WEIGHTS) #(1.0, 1.0, 1.0, 1.0)
 
     # Give the positive RPN examples weight of p * 1 / {num positives}
     # and give negatives a weight of (1 - p)
@@ -206,6 +207,17 @@ def anchor_target(rpn_cls_score, gt_boxes, im_dims, _feat_stride, anchor_scales)
     bbox_outside_weights[labels == 1, :] = positive_weights
     bbox_outside_weights[labels == 0, :] = negative_weights
 
+    # deleteme
+    """
+    for i,box in enumerate(bbox_inside_weights):
+        if np.sum(box) > 0:
+            print i
+    print ''
+    for i,box in enumerate(bbox_outside_weights):
+        if np.sum(box) > 0:
+            print i
+    print ''
+    """
     """
     여기에서는 부적적한 coordinate 을 제거한다 
     anchor 의 coordinate 갯수와 label 의 갯수는 같다 
@@ -217,6 +229,16 @@ def anchor_target(rpn_cls_score, gt_boxes, im_dims, _feat_stride, anchor_scales)
     bbox_targets = _unmap(bbox_targets, total_anchors, inds_inside, fill=0)
     bbox_inside_weights = _unmap(bbox_inside_weights, total_anchors, inds_inside, fill=0)
     bbox_outside_weights = _unmap(bbox_outside_weights, total_anchors, inds_inside, fill=0)
+    """
+    for i,box in enumerate(bbox_inside_weights):
+        if np.sum(box) > 0:
+            print i
+    print ''
+    for i,box in enumerate(bbox_outside_weights):
+        if np.sum(box) > 0:
+            print i
+    print ''
+    """
 
     # label을 변환한다
     ori_labels = labels.reshape((1, height, width, A))
@@ -224,14 +246,18 @@ def anchor_target(rpn_cls_score, gt_boxes, im_dims, _feat_stride, anchor_scales)
     labels = labels.reshape((1, 1, A * height, width)) # 왜 변하지 ?
     rpn_labels = labels
 
+
     # bbox_targets
+
     rpn_bbox_targets = bbox_targets.reshape((1, height, width, A * 4)).transpose(0, 3, 1, 2)
     # bbox_inside_weights
     rpn_bbox_inside_weights = bbox_inside_weights.reshape((1, height, width, A * 4)).transpose(0, 3, 1, 2)
     # bbox_outside_weights
     rpn_bbox_outside_weights = bbox_outside_weights.reshape((1, height, width, A * 4)).transpose(0, 3, 1, 2)
 
-    return rpn_labels, rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights , ori_labels
+
+
+    return rpn_labels, rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights ,bbox_targets ,bbox_inside_weights,bbox_outside_weights
 
 
 def _unmap(data, count, inds, fill=0):
