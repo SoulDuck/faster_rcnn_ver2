@@ -60,16 +60,15 @@ def anchor_target(rpn_cls_score, gt_boxes, im_dims, _feat_stride, anchor_scales)
     shifts = np.vstack((shift_x.ravel(), shift_y.ravel(),
                         shift_x.ravel(), shift_y.ravel())).transpose() # 4,88 을 88,4 로 바꾼다
 
-
     A = _num_anchors # 9
     K = shifts.shape[0] # 88
     all_anchors=np.array([])
     for i in range(len(_anchors)):
         if i ==0 :
-
             all_anchors=np.add(shifts , _anchors[i])
         else:
             all_anchors = np.concatenate((all_anchors, np.add(shifts, _anchors[i])), axis=0)
+
     all_anchors = all_anchors.reshape((K * A, 4))
     total_anchors = int(K * A)
     #print all_anchors
@@ -248,7 +247,6 @@ def anchor_target(rpn_cls_score, gt_boxes, im_dims, _feat_stride, anchor_scales)
 
 
     # bbox_targets
-
     rpn_bbox_targets = bbox_targets.reshape((1, height, width, A * 4)).transpose(0, 3, 1, 2)
     # bbox_inside_weights
     rpn_bbox_inside_weights = bbox_inside_weights.reshape((1, height, width, A * 4)).transpose(0, 3, 1, 2)
