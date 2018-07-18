@@ -1,0 +1,33 @@
+import os
+from scipy.misc import imread
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+def next_img_gtboxes(image_idx):
+    IMAGE_FORMAT= '.png'
+    data_dir='../faster_rcnn/clutteredMNIST'
+    train_name_path = os.path.join(data_dir, 'Names', 'train.txt')
+    train_names = [line.rstrip() for line in open(train_name_path, 'r')]
+    img_path = os.path.join(data_dir, 'Images', train_names[image_idx] + IMAGE_FORMAT)
+    annotation_path = os.path.join(data_dir, 'Annotations', train_names[image_idx] + '.txt')
+    img = imread(img_path)
+
+    gt_bbox = np.loadtxt(annotation_path, ndmin=2)
+    #im_dims = np.array(img.shape[:2]).reshape([1, 2])
+
+    flips = [0, 0]
+    flips[0] = np.random.binomial(1, 0.5)
+    #img = image_preprocessing.image_preprocessing(img)
+    if np.max(img) > 1:
+        img = img / 255.
+    return img , gt_bbox
+
+if '__main__' == __name__:
+    img , gt_boxes =next_img_gtboxes(image_idx=1)
+    ax=plt.axes()
+    for box in gt_boxes:
+        x1, y1, x2, y2, label = box  # x1 ,y1 ,x2 ,y2
+        rect = patches.Rectangle((x1, y1), x2-x1, y2-y1, linewidth=1, edgecolor='r', facecolor='none')
+        ax.add_patch(rect)
+    plt.imshow(img)
+    plt.show()
