@@ -100,8 +100,6 @@ def rpn_bbox_loss(rpn_bbox_pred, rpn_bbox_targets, rpn_inside_weights, rpn_outsi
         rpn_bbox_targets = tf.transpose(rpn_bbox_targets, [0, 2, 3, 1])
         rpn_bbox_targets = tf.reshape(rpn_bbox_targets, [-1, 4])
 
-
-        exit()
         """
         rpn_cls_score_0 = tf.transpose(rpn_cls_score, [0, 3, 1, 2])  # (1, h, w, 18) ==>
         rpn_cls_score_1 = tf.reshape(rpn_cls_score_0, [shape[0], 2, shape[3] // 2 * shape[1], shape[2]])
