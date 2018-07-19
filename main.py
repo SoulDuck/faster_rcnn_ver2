@@ -40,7 +40,8 @@ rpn_bbox_train_op = optimizer(rpn_bbox_loss_op )
 train_op = optimizer(rpn_bbox_loss_op )
 
 sess=sess_start()
-for i in range(2,100000):
+for i in range(2,55000 * 100):
+
     src_img , src_gt_boxes =next_img_gtboxes(i)
     h,w=np.shape(src_img)
     src_im_dims = [(h,w)]
