@@ -54,7 +54,9 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
 
     # the first set of _num_anchors channels are bg probs
     # the second set are the fg probs
-    scores = rpn_bbox_cls_prob[:, _num_anchors:, :, :] # 1, 18  , H, W --> 1, 9, H, W
+
+
+    scores = rpn_bbox_cls_prob[:,  _num_anchors : , :, :] # 1, 18  , H, W --> 1, 9, H, W
     bbox_deltas = rpn_bbox_pred
 
     # 1. Generate proposals from bbox deltas and shifted anchors
@@ -82,6 +84,7 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
             anchors = np.concatenate((anchors, np.add(shifts, _anchors[i])), axis=0)
     anchors = anchors.reshape((K * A, 4))
     bbox_deltas = bbox_deltas.transpose((0, 2, 3, 1)).reshape((-1, 4))
+
     scores = scores.transpose((0, 2, 3, 1)).reshape((-1, 1)) # (h * w * A , 1)
     # anchors ,bbox_deltas , scores 모두 같은 shape 여야 한다
 
@@ -121,8 +124,8 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     # batch inds are 0
     batch_inds = np.zeros((proposals.shape[0], 1), dtype=np.float32)
     blob = np.hstack((batch_inds, proposals.astype(np.float32, copy=False))) # N , 5
-    #blob=np.hstack((blob , scores))
 
+    #blob=np.hstack((blob , scores))
 
     return blob , scores
 

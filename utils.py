@@ -22,6 +22,22 @@ def next_img_gtboxes(image_idx):
         img = img / 255.
     return img , gt_bbox
 
+
+def draw_rectangles(img ,bboxes , savepath):
+    ax = plt.axes()
+    plt.imshow(img)
+    for box in bboxes:
+        print box
+        label ,x1, y1, x2, y2= box  # x1 ,y1 ,x2 ,y2
+
+        rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor='r', facecolor='none')
+        ax.add_patch(rect)
+    plt.savefig(savepath)
+    plt.close()
+
+
+
+
 if '__main__' == __name__:
     img , gt_boxes =next_img_gtboxes(image_idx=1)
     ax=plt.axes()
@@ -31,3 +47,5 @@ if '__main__' == __name__:
         ax.add_patch(rect)
     plt.imshow(img)
     plt.show()
+
+
