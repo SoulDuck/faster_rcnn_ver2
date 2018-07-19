@@ -30,13 +30,15 @@ rpn_cls_loss_op ,A_op ,B_op = rpn_cls_loss(rpn_cls , rpn_labels_op)
 # D_op :indiced rpn target  op
 # E_op : rpn_inside_weights
 # F_op : indices
-
-
 rpn_bbox_loss_op , diff_op , C_op , D_op ,E_op ,F_op= \
     rpn_bbox_loss(rpn_bbox_pred ,bbox_targets_op , bbox_inside_weights_op , bbox_outside_weights_op , rpn_labels_op)
 
-cost_op = rpn_bbox_loss_op
-train_op = optimizer(cost_op)
+
+cost_op = rpn_bbox_loss_op + rpn_cls_loss_op
+rpn_cls_train_op = optimizer(rpn_cls_loss_op)
+rpn_bbox_train_op = optimizer(rpn_bbox_loss_op )
+train_op = optimizer(rpn_bbox_loss_op )
+
 sess=sess_start()
 for i in range(2,100000):
     src_img , src_gt_boxes =next_img_gtboxes(i)
@@ -73,7 +75,7 @@ for i in range(2,100000):
                  rpn_bbox_outside_weights_op : rpn_bbox_outside_weights
                  }
     cost, _ ,rpn_cls_value, A, B, diff, C, D ,E ,F= sess.run(
-        fetches=[cost_op, train_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op ,E_op ,F_op], feed_dict=feed_dict)
+        fetches=[rpn_cls_loss_op, rpn_cls_train_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op ,E_op ,F_op], feed_dict=feed_dict)
     print '#### indices ####'
     print F
     print '#### cos ####'

@@ -229,9 +229,8 @@ def bbox_loss(rpn_bbox_pred, bbox_targets, inside_weights, outside_weights , rpn
         rpn_bbox_reg = RPN_BBOX_LAMBDA * rpn_bbox_reg
 
     return rpn_bbox_reg , diff ,rpn_bbox_pred_inds ,bbox_targets_inds ,inside_weights_inds, indices
-def optimizer(cost):
-    lr=0.001
-    train_op= tf.train.GradientDescentOptimizer(learning_rate=lr).minimize(cost)
+def optimizer(cost , lr):
+    train_op= tf.train.AdamOptimizer(learning_rate=lr).minimize(cost)
     return train_op
 
 if __name__== '__main__':

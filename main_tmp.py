@@ -35,8 +35,12 @@ rpn_bbox_loss_op , diff_op , C_op , D_op ,E_op ,F_op= \
 
 anchor_scales = [3,4,5]
 blobs_op, scores_op= roi.roi_proposal(rpn_cls , rpn_bbox_pred , im_dims , _feat_stride , anchor_scales ,is_training=True)
+
 cost_op = rpn_cls_loss_op + rpn_bbox_loss_op
-train_op = optimizer(cost_op)
+train_cls_op = optimizer(rpn_cls_loss_op , lr=0.01)
+train_bbox_op = optimizer(rpn_bbox_loss_op , lr = 0.001)
+train_op = optimizer(cost_op , lr=0.001)
+
 sess=sess_start()
 
 max_iter = 100000
@@ -58,13 +62,22 @@ for i in range(2,100000):
                  bbox_outside_weights_op : bbox_outside_weights
                  }
 
-    cost, _ ,rpn_cls_value, A, B, diff, C, D ,E ,F , blobs ,scores= sess.run(
-        fetches=[cost_op, train_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op ,E_op ,F_op,blobs_op ,scores_op], feed_dict=feed_dict)
+    if i < 10000:
+        cls_cost,bbox_cost ,_ ,rpn_cls_value, A, B, diff, C, D ,E ,F , blobs ,scores = sess.run(
+            fetches=[rpn_cls_loss_op,rpn_bbox_loss_op, train_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op ,E_op ,F_op,blobs_op ,scores_op], feed_dict=feed_dict)
+
+    else:
+        cls_cost,bbox_cost , _ ,rpn_cls_value, A, B, diff, C, D ,E ,F , blobs ,scores= sess.run(
+            fetches=[rpn_cls_loss_op,rpn_bbox_loss_op, train_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op ,E_op ,F_op,blobs_op ,scores_op], feed_dict=feed_dict)
+
 
     pos_blobs=blobs[np.where([scores > 0.5])[1]]
 
     if i % 100 ==0:
-        print '\t', cost
+        print
+        print 'RPN CLS LOSS : \t', cls_cost
+        print 'RPN BBOX LOSS \t', bbox_cost
+        print 'POS BBOX \t', pos_blobs
         print len(pos_blobs)
         savepath = './result/{}.png'.format(i)
         src_img=np.squeeze(src_img)

@@ -27,7 +27,7 @@ def draw_rectangles(img ,bboxes , savepath):
     ax = plt.axes()
     plt.imshow(img)
     for box in bboxes:
-        print box
+
         label ,x1, y1, x2, y2= box  # x1 ,y1 ,x2 ,y2
 
         rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor='r', facecolor='none')
