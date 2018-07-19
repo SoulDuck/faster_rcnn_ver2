@@ -11,7 +11,7 @@ def next_img_gtboxes(image_idx):
     train_name_path = os.path.join(data_dir, 'Names', 'train.txt')
     train_names = [line.rstrip() for line in open(train_name_path, 'r')]
     if image_idx > (len(train_names)-1) :
-        image_idx=(len(train_names)-1) % image_idx
+        image_idx= image_idx % (len(train_names)-1)
 
 
     img_path = os.path.join(data_dir, 'Images', train_names[image_idx] + IMAGE_FORMAT)

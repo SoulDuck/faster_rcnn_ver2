@@ -175,23 +175,18 @@ def rpn_bbox_loss(rpn_bbox_pred, rpn_bbox_targets, rpn_inside_weights, rpn_outsi
 
 
 def bbox_loss(rpn_bbox_pred, bbox_targets, inside_weights, outside_weights , rpn_labels):
-
-
     RPN_BBOX_LAMBDA = 10.0
     with tf.variable_scope('rpn_bbox_loss'):
-
         # Extract Indices
         rpn_labels = tf.transpose(rpn_labels, [0, 2, 3, 1])
         rpn_labels = tf.reshape(rpn_labels, [-1])
         indices = tf.where(tf.not_equal(rpn_labels, -1))
         indices = tf.reshape(indices, shape=[-1])
-
         """
         # RPN BBOX TARGET
         rpn_bbox_targets = _bbox_transpose(layer=rpn_bbox_targets)
         rpn_bbox_targets = _extract_valid_bbox(layer=rpn_bbox_targets)
         """
-
         # RPN BBOX PREDICTION
         shape = tf.shape(rpn_bbox_pred)
         rpn_bbox_pred = tf.transpose(rpn_bbox_pred, [0, 3, 1, 2])
