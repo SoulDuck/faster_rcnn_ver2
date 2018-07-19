@@ -210,7 +210,6 @@ def bbox_loss(rpn_bbox_pred, bbox_targets, inside_weights, outside_weights , rpn
         inside_weights_inds = tf.reshape(inside_weights_inds , shape=[-1 , 4])
 
         # RPN OUTSIDE WEIGHT
-
         outside_weights_inds = tf.gather(outside_weights, indices, name='outside_weights')
         outside_weights_inds = tf.reshape(outside_weights_inds, shape=[-1, 4])
 
@@ -221,7 +220,6 @@ def bbox_loss(rpn_bbox_pred, bbox_targets, inside_weights, outside_weights , rpn
         diff_sL1 = smoothL1(diff, 3.0)
 
         # Only count loss for positive anchors. Make sure it's a sum.
-
         # tf.multiply(outside_weights, diff_sL1) shape : ? ? ? 36
         rpn_bbox_reg = tf.reduce_sum(tf.multiply(outside_weights_inds, diff_sL1))
 

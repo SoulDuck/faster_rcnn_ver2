@@ -253,8 +253,6 @@ def anchor_target(rpn_cls_score, gt_boxes, im_dims, _feat_stride, anchor_scales)
     # bbox_outside_weights
     rpn_bbox_outside_weights = bbox_outside_weights.reshape((1, height, width, A * 4)).transpose(0, 3, 1, 2)
 
-
-
     return rpn_labels, rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights ,bbox_targets ,bbox_inside_weights,bbox_outside_weights
 
 
