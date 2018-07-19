@@ -64,7 +64,7 @@ for i in range(2,max_iter):
             fetches=[rpn_cls_loss_op,rpn_bbox_loss_op, train_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op ,E_op ,F_op,blobs_op ,scores_op], feed_dict=feed_dict)
     pos_blobs=blobs[np.where([scores > 0.5])[1]]
 
-    if i % 10 ==0:
+    if i % 200 ==0:
         print
         print 'RPN CLS LOSS : \t', cls_cost
         print 'RPN BBOX LOSS \t', bbox_cost
