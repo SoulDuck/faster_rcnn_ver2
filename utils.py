@@ -1,6 +1,8 @@
 import os
 from scipy.misc import imread
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 def next_img_gtboxes(image_idx):
