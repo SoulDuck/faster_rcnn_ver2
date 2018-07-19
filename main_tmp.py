@@ -20,14 +20,16 @@ rpn_cls = rpn_cls_layer(top_conv)
 # RPN BBOX
 rpn_bbox_pred = rpn_bbox_layer(top_conv)
 # CLS LOSS
+# A_op : rpn cls pred
+# B_op : indiced
 rpn_cls_loss_op ,A_op ,B_op = rpn_cls_loss(rpn_cls , rpn_labels_op)
+
 # BBOX LOSS
 # C_op : indiced rpn bbox  pred op
-# D_op :indiced rpn target  op
+# D_op : indiced rpn target  op
 # E_op : rpn_inside_weights
-# F_op : indices
-
-rpn_bbox_loss_op , diff_op , C_op , D_op ,E_op ,F_op = \
+# F_op : rpn_outside_weights
+rpn_bbox_loss_op , diff_op , C_op , D_op ,E_op ,F_op= \
     bbox_loss(rpn_bbox_pred ,bbox_targets_op , bbox_inside_weights_op , bbox_outside_weights_op , rpn_labels_op)
 anchor_scales = [3, 4, 5]
 blobs_op, scores_op= roi.roi_proposal(rpn_cls , rpn_bbox_pred , im_dims , _feat_stride , anchor_scales ,is_training=True)
@@ -57,17 +59,22 @@ for i in range(2,max_iter):
     if i < 10000:
         cls_cost,bbox_cost ,_ ,rpn_cls_value, A, B, diff, C, D ,E ,F , blobs ,scores = sess.run(
             fetches=[rpn_cls_loss_op,rpn_bbox_loss_op, train_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op ,E_op ,F_op,blobs_op ,scores_op], feed_dict=feed_dict)
-
     else:
         cls_cost,bbox_cost , _ ,rpn_cls_value, A, B, diff, C, D ,E ,F , blobs ,scores= sess.run(
             fetches=[rpn_cls_loss_op,rpn_bbox_loss_op, train_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op ,E_op ,F_op,blobs_op ,scores_op], feed_dict=feed_dict)
     pos_blobs=blobs[np.where([scores > 0.5])[1]]
 
-    if i % 100 ==0:
+    if i % 10 ==0:
         print
         print 'RPN CLS LOSS : \t', cls_cost
         print 'RPN BBOX LOSS \t', bbox_cost
         print 'POS BBOX \t', pos_blobs
+        print 'RPN CLS prediction ',A
+        print 'indiced Pred bbox',C
+        print 'indiced target bbox', D
+        print 'inside Weight', E
+        print 'outside Weight', F
+        print 'indices',B
         print len(pos_blobs)
         savepath = './result/{}.png'.format(i)
         src_img=np.squeeze(src_img)

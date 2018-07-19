@@ -99,8 +99,6 @@ def transform(layer):
 
 
 def rpn_bbox_loss(rpn_bbox_pred, rpn_bbox_targets, rpn_inside_weights, rpn_outside_weights , rpn_labels):
-
-
     RPN_BBOX_LAMBDA = 10.0
     with tf.variable_scope('rpn_bbox_loss'):
         #
@@ -219,9 +217,10 @@ def bbox_loss(rpn_bbox_pred, bbox_targets, inside_weights, outside_weights , rpn
         rpn_bbox_reg = tf.reduce_sum(tf.multiply(outside_weights_inds, diff_sL1))
 
         # Constant for weighting bounding box loss with classification loss
+        RPN_BBOX_LAMBDA=1
         rpn_bbox_reg = RPN_BBOX_LAMBDA * rpn_bbox_reg
 
-    return rpn_bbox_reg , diff ,rpn_bbox_pred_inds ,bbox_targets_inds ,inside_weights_inds, indices
+    return rpn_bbox_reg , diff ,rpn_bbox_pred_inds ,bbox_targets_inds ,inside_weights_inds, outside_weights_inds
 def optimizer(cost , lr):
     train_op= tf.train.AdamOptimizer(learning_rate=lr).minimize(cost)
     return train_op
