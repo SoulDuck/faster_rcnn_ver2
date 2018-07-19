@@ -43,8 +43,8 @@ train_op = optimizer(cost_op , lr=0.001)
 
 sess=sess_start()
 
-max_iter = 100000
-for i in range(2,100000):
+max_iter = 55000 * 100
+for i in range(2,max_iter):
     src_img , src_gt_boxes =next_img_gtboxes(i)
     h,w=np.shape(src_img)
     src_im_dims = [(h,w)]
