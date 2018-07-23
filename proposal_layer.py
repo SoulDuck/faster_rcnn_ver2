@@ -192,8 +192,9 @@ def _inv_transform_layer_py(rpn_bbox_pred, im_dims,  is_training, _feat_stride, 
 
 
 def inv_transform_layer(rpn_bbox_pred, im_dims, cfg_key, _feat_stride, anchor_scales , indices):
-    blobs = tf.py_func(_inv_transform_layer_py, [rpn_bbox_pred, im_dims, cfg_key, _feat_stride, anchor_scales , indices],
+    proposals, target_proposals = tf.py_func(_inv_transform_layer_py, [rpn_bbox_pred, im_dims, cfg_key, _feat_stride, anchor_scales , indices],
                        [tf.float32])
-    blobs=tf.reshape(blobs , shape=[-1,5])
+    blobs=tf.reshape(proposals , shape=[-1,5])
+    blobs = tf.reshape(target_proposals, shape=[-1, 5])
     return blobs
 
