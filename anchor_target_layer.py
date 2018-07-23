@@ -18,7 +18,6 @@ import sys
 import numpy as np
 import numpy.random as npr
 import tensorflow as tf
-
 import bbox_overlaps
 import bbox_transform
 import generate_anchor

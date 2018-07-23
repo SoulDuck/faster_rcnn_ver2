@@ -4,6 +4,7 @@ from utils import next_img_gtboxes , draw_rectangles
 from anchor_target_layer import anchor_target
 from convnet import define_placeholder , simple_convnet , rpn_cls_layer , rpn_bbox_layer , sess_start , optimizer ,rpn_cls_loss , rpn_bbox_loss ,bbox_loss
 import math
+
 import roi
 import sys
 rpn_labels_op = tf.placeholder(dtype =tf.int32 , shape=[1,1,None,None])

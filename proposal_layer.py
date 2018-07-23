@@ -135,3 +135,57 @@ def _filter_boxes(boxes, min_size):
     hs = boxes[:, 3] - boxes[:, 1] + 1
     keep = np.where((ws >= min_size) & (hs >= min_size))[0]
     return keep
+
+def inv_transform_layer(rpn_bbox_pred, im_dims, cfg_key, _feat_stride, anchor_scales):
+    _anchors = generate_anchor.generate_anchors(scales=np.array(anchor_scales)) # #_anchors ( 9, 4 )
+    _num_anchors = _anchors.shape[0] #9
+    rpn_bbox_pred = np.transpose(rpn_bbox_pred, [0, 3, 1, 2]) # 1, 36 , h , w
+    if cfg_key == 'TRAIN':
+        pre_nms_topN = cfg.TRAIN.RPN_PRE_NMS_TOP_N #12000
+        post_nms_topN = cfg.TRAIN.RPN_POST_NMS_TOP_N # 2000
+        nms_thresh = cfg.TRAIN.RPN_NMS_THRESH #0.7
+        min_size = cfg.TRAIN.RPN_MIN_SIZE # 16
+    else:  # cfg_key == 'TEST':
+        pre_nms_topN = cfg.TEST.RPN_PRE_NMS_TOP_N
+        post_nms_topN = cfg.TEST.RPN_POST_NMS_TOP_N
+        nms_thresh = cfg.TEST.RPN_NMS_THRESH
+        min_size = cfg.TEST.RPN_MIN_SIZE
+    # the first set of _num_anchors channels are bg probs
+    # the second set are the fg probs
+
+    bbox_deltas = rpn_bbox_pred
+
+    # 1. Generate proposals from bbox deltas and shifted anchors
+    height, width = rpn_bbox_pred.shape[-2:]
+    # Enumerate all shifts
+    shift_x = np.arange(0, width) * _feat_stride
+    shift_y = np.arange(0, height) * _feat_stride
+    shift_x, shift_y = np.meshgrid(shift_x, shift_y)
+    shifts = np.vstack((shift_x.ravel(), shift_y.ravel(),
+                        shift_x.ravel(), shift_y.ravel())).transpose()
+    # Enumerate all shifted anchors:
+    # add A anchors (1, A, 4) to
+    # cell K shifts (K, 1, 4) to get
+    # shift anchors (K, A, 4)
+    # reshape to (K*A, 4) shifted anchors
+    A = _num_anchors
+    K = shifts.shape[0]
+
+    #anchors = _anchors.reshape((1, A, 4)) + shifts.reshape((1, K, 4)).transpose((1, 0, 2))
+    anchors = np.array([])
+    for i in range(len(_anchors)):
+        if i == 0:
+            anchors = np.add(shifts, _anchors[i])
+        else:
+            anchors = np.concatenate((anchors, np.add(shifts, _anchors[i])), axis=0)
+    anchors = anchors.reshape((K * A, 4))
+    bbox_deltas = bbox_deltas.transpose((0, 2, 3, 1)).reshape((-1, 4))
+    # anchors ,bbox_deltas , scores 모두 같은 shape 여야 한다
+
+    proposals = bbox_transform_inv(anchors, bbox_deltas)
+    proposals = clip_boxes(proposals, im_dims) # image size 보다 큰 proposals 들이 줄어 들수 있도록 한다.
+
+
+
+
+def _inv_transform_layer()

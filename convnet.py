@@ -41,7 +41,6 @@ def sess_start():
     sess=tf.Session()
     init=tf.group(tf.global_variables_initializer() , tf.local_variables_initializer())
     sess.run(init)
-
     return sess
 
 def rpn_cls_loss(rpn_cls_score , rpn_labels):
@@ -50,7 +49,6 @@ def rpn_cls_loss(rpn_cls_score , rpn_labels):
     rpn_cls_score_1 = tf.reshape(rpn_cls_score_0, [shape[0], 2, shape[3] // 2 * shape[1], shape[2]])
     rpn_cls_score_2 = tf.transpose(rpn_cls_score_1, [0, 2, 3, 1])
     rpn_cls_score = tf.reshape(rpn_cls_score_2, [-1, 2])
-
     rpn_labels = tf.reshape(rpn_labels, [-1])
 
     cls_indices = tf.gather(rpn_cls_score, tf.where(tf.not_equal(rpn_labels, -1)), name='cls_indices')
