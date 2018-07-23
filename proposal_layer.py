@@ -136,11 +136,12 @@ def _filter_boxes(boxes, min_size):
     keep = np.where((ws >= min_size) & (hs >= min_size))[0]
     return keep
 
-def inv_transform_layer(rpn_bbox_pred, im_dims, cfg_key, _feat_stride, anchor_scales):
+def _inv_transform_layer_py(rpn_bbox_pred, im_dims,  is_training, _feat_stride, anchor_scales , indices):
     _anchors = generate_anchor.generate_anchors(scales=np.array(anchor_scales)) # #_anchors ( 9, 4 )
     _num_anchors = _anchors.shape[0] #9
+    print rpn_bbox_pred
     rpn_bbox_pred = np.transpose(rpn_bbox_pred, [0, 3, 1, 2]) # 1, 36 , h , w
-    if cfg_key == 'TRAIN':
+    if is_training == 'TRAIN':
         pre_nms_topN = cfg.TRAIN.RPN_PRE_NMS_TOP_N #12000
         post_nms_topN = cfg.TRAIN.RPN_POST_NMS_TOP_N # 2000
         nms_thresh = cfg.TRAIN.RPN_NMS_THRESH #0.7
@@ -184,8 +185,15 @@ def inv_transform_layer(rpn_bbox_pred, im_dims, cfg_key, _feat_stride, anchor_sc
 
     proposals = bbox_transform_inv(anchors, bbox_deltas)
     proposals = clip_boxes(proposals, im_dims) # image size 보다 큰 proposals 들이 줄어 들수 있도록 한다.
+    target_proposals=proposals[indices]
+    print np.shape(target_proposals)
+    return proposals , target_proposals
 
 
 
+def inv_transform_layer(rpn_bbox_pred, im_dims, cfg_key, _feat_stride, anchor_scales , indices):
+    blobs = tf.py_func(_inv_transform_layer_py, [rpn_bbox_pred, im_dims, cfg_key, _feat_stride, anchor_scales , indices],
+                       [tf.float32])
+    blobs=tf.reshape(blobs , shape=[-1,5])
+    return blobs
 
-def _inv_transform_layer()
