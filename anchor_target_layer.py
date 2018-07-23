@@ -182,6 +182,7 @@ def anchor_target(rpn_cls_score, gt_boxes, im_dims, _feat_stride, anchor_scales)
     # inside index 에 해당하는 gt boxes 들을 변환 시킨다.
     bbox_targets = _compute_targets(anchors, gt_boxes[argmax_overlaps, :]) #  bbox_targets = dx , dy , dw , dh
 
+
     # 나중에 사용할 bbox inside weight 와 outside weight 을 만든다
     bbox_inside_weights = np.zeros((len(inds_inside), 4), dtype=np.float32)
     bbox_inside_weights[labels==1, :] = np.array(RPN_BBOX_INSIDE_WEIGHTS) #(1.0, 1.0, 1.0, 1.0)
@@ -272,7 +273,7 @@ def _compute_targets(ex_rois, gt_rois):
     """Compute bounding-box regression targets for an image."""
 
     assert ex_rois.shape[0] == gt_rois.shape[0]
-    assert ex_rois.shape[1] == 4
-    assert gt_rois.shape[1] == 5
+    assert ex_rois.shape[1] == 4 # anchor
+    assert gt_rois.shape[1] == 5 # gt_bbox
 
     return bbox_transform.bbox_transform(ex_rois, gt_rois[:, :4]).astype(np.float32, copy=False)

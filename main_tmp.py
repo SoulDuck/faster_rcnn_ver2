@@ -3,7 +3,7 @@ import numpy as np
 from utils import next_img_gtboxes , draw_rectangles
 from anchor_target_layer import anchor_target
 from convnet import define_placeholder , simple_convnet , rpn_cls_layer , rpn_bbox_layer , sess_start , optimizer ,rpn_cls_loss , rpn_bbox_loss ,bbox_loss
-from proposal_layer import inv_transform_layer , _inv_transform_layer_py
+from proposal_layer import inv_transform_layer
 import math
 
 
@@ -35,10 +35,12 @@ rpn_cls_loss_op ,A_op ,B_op = rpn_cls_loss(rpn_cls , rpn_labels_op)
 rpn_bbox_loss_op , diff_op , C_op , D_op ,E_op ,F_op= \
     bbox_loss(rpn_bbox_pred ,bbox_targets_op , bbox_inside_weights_op , bbox_outside_weights_op , rpn_labels_op)
 anchor_scales = [3, 4, 5]
+
 # BBOX OP
 # INV inv_blobs_op OP = return to the original Coordinate
 # INV target_inv_blobs_op OP = return to the original Coordinate (indices )
-inv_blobs_op  , target_inv_blobs_op = inv_transform_layer(rpn_bbox_pred , im_dims ,  cfg_key = phase_train , _feat_stride = _feat_stride , anchor_scales =anchor_scales , indices = B_op)
+inv_blobs_op  , target_inv_blobs_op = inv_transform_layer(rpn_bbox_pred ,  cfg_key = phase_train , \
+                                        _feat_stride = _feat_stride , anchor_scales =anchor_scales , indices = B_op)
 blobs_op, scores_op= roi.roi_proposal(rpn_cls , rpn_bbox_pred , im_dims , _feat_stride , anchor_scales ,is_training=True)
 cost_op = rpn_cls_loss_op + rpn_bbox_loss_op
 train_cls_op = optimizer(rpn_cls_loss_op , lr=0.01)
@@ -65,14 +67,13 @@ for i in range(2,max_iter):
                  }
     if i < 10000:
         cls_cost,bbox_cost ,_ ,rpn_cls_value, A, B, diff, C, D ,E ,F , blobs ,scores  , target_inv_blobs= sess.run(
-            fetches=[rpn_cls_loss_op,rpn_bbox_loss_op, train_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op ,E_op ,F_op,blobs_op ,scores_op , target_inv_blobs_op], feed_dict=feed_dict)
+            fetches=[rpn_cls_loss_op, rpn_bbox_loss_op, train_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op, E_op, F_op,
+                     blobs_op, scores_op, target_inv_blobs_op], feed_dict=feed_dict)
     else:
         cls_cost,bbox_cost , _ ,rpn_cls_value, A, B, diff, C, D ,E ,F , blobs ,scores , target_inv_blobs= sess.run(
-            fetches=[rpn_cls_loss_op,rpn_bbox_loss_op, train_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op ,E_op ,F_op,blobs_op ,scores_op,target_inv_blobs_op], feed_dict=feed_dict)
+            fetches=[rpn_cls_loss_op, rpn_bbox_loss_op, train_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op, E_op, F_op,
+                     blobs_op, scores_op, target_inv_blobs_op], feed_dict=feed_dict)
     pos_blobs=blobs[np.where([scores > 0.5])[1]]
-
-
-
     if i % 200 ==0:
         print
         print 'RPN CLS LOSS : \t', cls_cost
@@ -88,7 +89,7 @@ for i in range(2,max_iter):
         print len(pos_blobs)
         savepath = './result/{}.png'.format(i)
         src_img=np.squeeze(src_img)
-        draw_rectangles(src_img ,pos_blobs, savepath)
+        draw_rectangles(src_img ,target_inv_blobs, savepath)
 
     sys.stdout.write('\r Progress {} {}'.format(i,max_iter))
     sys.stdout.flush()

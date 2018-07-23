@@ -34,12 +34,14 @@ def draw_rectangles(img ,bboxes , savepath):
     plt.imshow(img)
     for box in bboxes:
 
-        label ,x1, y1, x2, y2= box  # x1 ,y1 ,x2 ,y2
-
-        rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor='r', facecolor='none')
-        ax.add_patch(rect)
-    plt.savefig(savepath)
-    plt.close()
+        x1, y1, x2, y2= box  # x1 ,y1 ,x2 ,y2
+        if x1 >0 and y1 >0 and x2 > 0 and y2 > 0 and x2 > x1 and y2 > y1 :
+            rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor='r', facecolor='none')
+            ax.add_patch(rect)
+            plt.savefig(savepath)
+            plt.close()
+        else:
+            continue
 
 
 
