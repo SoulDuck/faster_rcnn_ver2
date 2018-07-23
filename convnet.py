@@ -49,7 +49,9 @@ def rpn_cls_loss(rpn_cls_score , rpn_labels):
     rpn_cls_score_1 = tf.reshape(rpn_cls_score_0, [shape[0], 2, shape[3] // 2 * shape[1], shape[2]])
     rpn_cls_score_2 = tf.transpose(rpn_cls_score_1, [0, 2, 3, 1])
     rpn_cls_score = tf.reshape(rpn_cls_score_2, [-1, 2])
-    rpn_labels = tf.reshape(rpn_labels, [-1])
+
+    rpn_labels = tf.transpose(rpn_labels, [0, 2, 3, 1])
+    rpn_labels = tf.reshape(rpn_labels, [-1]) #(1,1,h,w)
 
     cls_indices = tf.gather(rpn_cls_score, tf.where(tf.not_equal(rpn_labels, -1)), name='cls_indices')
     lab_indices = tf.gather(rpn_labels, tf.where(tf.not_equal(rpn_labels, -1)), name='lab_indices')
@@ -61,7 +63,7 @@ def rpn_cls_loss(rpn_cls_score , rpn_labels):
     rpn_cross_entropy = tf.reduce_mean(
         tf.nn.sparse_softmax_cross_entropy_with_logits(logits=rpn_cls_score, labels=rpn_labels))
 
-    return rpn_cross_entropy ,rpn_cls_score , rpn_labels
+    return rpn_cross_entropy ,rpn_cls_score , tf.where(tf.not_equal(rpn_labels, -1))
 
 
 

@@ -144,6 +144,7 @@ def _inv_transform_layer_py(rpn_bbox_pred,  is_training, _feat_stride, anchor_sc
     rpn_bbox_pred = np.reshape(rpn_bbox_pred, [shape[0], 4, shape[3] // 4 * shape[1], shape[2]])  # 1, 4 , h * 9 , w
     rpn_bbox_pred = np.transpose(rpn_bbox_pred, (0, 2, 3, 1)) # 1, h * 9 , w , 4
     bbox_deltas = rpn_bbox_pred
+    bbox_deltas = bbox_deltas.reshape((-1, 4))
 
     if is_training == 'TRAIN':
         pre_nms_topN = cfg.TRAIN.RPN_PRE_NMS_TOP_N #12000
@@ -157,7 +158,6 @@ def _inv_transform_layer_py(rpn_bbox_pred,  is_training, _feat_stride, anchor_sc
         min_size = cfg.TEST.RPN_MIN_SIZE
     # the first set of _num_anchors channels are bg probs
     # the second set are the fg probs
-
 
     # 1. Generate proposals from bbox deltas and shifted anchors
     height, width = shape[1] , shape[2]
@@ -183,9 +183,6 @@ def _inv_transform_layer_py(rpn_bbox_pred,  is_training, _feat_stride, anchor_sc
         else:
             anchors = np.concatenate((anchors, np.add(shifts, _anchors[i])), axis=0)
     anchors = anchors.reshape((K * A, 4))
-
-
-    bbox_deltas = bbox_deltas.transpose((0, 2, 3, 1)).reshape((-1, 4))
 
     # anchors ,bbox_deltas , scores 모두 같은 shape 여야 한다
     proposals = bbox_transform_inv(anchors, bbox_deltas)
