@@ -1,6 +1,6 @@
 from configure import cfg
 from cpu_nms import cpu_nms
-
+import numpy as np
 def nms(dets, thresh, force_cpu=False):
     """Dispatch to either CPU or GPU NMS implementations."""
 

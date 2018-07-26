@@ -75,9 +75,6 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     scores =scores.reshape([-1,1])
     scores_ori = scores
 
-
-
-
     # Enumerate all shifts
     shift_x = np.arange(0, width) * _feat_stride
     shift_y = np.arange(0, height) * _feat_stride
@@ -123,22 +120,18 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     order = scores.ravel().argsort()[::-1] # 크기 순서를 뒤집는다 가장 큰 값이 먼저 오게 한다
     if pre_nms_topN > 0: #120000
         order = order[:pre_nms_topN]
-
-
     #print np.sum([scores>0.7])
     scores = scores[order]
-    proposals = proposals[order]
 
+
+    print scores.T
     # 6. apply nms (e.g. threshold = 0.7)
     # 7. take after_nms_topN (e.g. 300)
     # 8. return the top proposals (-> RoIs top)
     #print np.shape(np.hstack ((proposals , scores))) # --> [x_start , y_start ,x_end, y_end , score ] 이런 형태로 만든다
     # proposals ndim and scores ndim must be same
     keep = nms(np.hstack((proposals, scores)), nms_thresh) # nms_thresh = 0.7 | hstack --> axis =1
-    #non_maximum_supression(proposals , nms_thresh)
-
-
-
+    #keep = non_maximum_supression(proposals , nms_thresh)
     if post_nms_topN > 0:
         keep = keep[:post_nms_topN]
     proposals = proposals[keep, :]
