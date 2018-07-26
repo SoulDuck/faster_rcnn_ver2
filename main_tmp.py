@@ -82,7 +82,8 @@ for i in range(2,max_iter):
         print 'RPN BBOX LOSS \t', bbox_cost
         print 'POS BBOX \t', pos_blobs
         print 'ROI SCORE \t', np.shape(roi_scores)
-        print 'ROI BLOBS \t', np.shape(pos_blobs)
+        print 'ROI BLOBS \t', np.shape(roi_blobs)
+        print 'ROI POS BLOBS \t', np.shape(pos_blobs)
 
         print 'RPN CLS prediction ',A
         print 'indiced Pred bbox',C
@@ -98,7 +99,7 @@ for i in range(2,max_iter):
         target_inv_blobs=target_inv_blobs.astype(np.int)
         print np.shape(src_img)
         print target_inv_blobs
-        draw_rectangles(src_img ,pos_blobs, savepath)
+        draw_rectangles(src_img ,pos_blobs[:,1:], savepath)
 
     sys.stdout.write('\r Progress {} {}'.format(i,max_iter))
     sys.stdout.flush()
