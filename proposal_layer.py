@@ -7,7 +7,7 @@ import tensorflow as tf
 from bbox_transform import bbox_transform_inv, clip_boxes
 from configure import cfg
 import generate_anchor
-from nms_wrapper import nms
+from nms_wrapper import nms , non_maximum_supression
 
 
 def proposal_layer(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat_stride, anchor_scales):
@@ -123,9 +123,11 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     order = scores.ravel().argsort()[::-1] # 크기 순서를 뒤집는다 가장 큰 값이 먼저 오게 한다
     if pre_nms_topN > 0: #120000
         order = order[:pre_nms_topN]
+
+
     #print np.sum([scores>0.7])
     scores = scores[order]
-
+    proposals = proposals[order]
 
     # 6. apply nms (e.g. threshold = 0.7)
     # 7. take after_nms_topN (e.g. 300)
@@ -133,6 +135,7 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     #print np.shape(np.hstack ((proposals , scores))) # --> [x_start , y_start ,x_end, y_end , score ] 이런 형태로 만든다
     # proposals ndim and scores ndim must be same
     keep = nms(np.hstack((proposals, scores)), nms_thresh) # nms_thresh = 0.7 | hstack --> axis =1
+    #non_maximum_supression(proposals , nms_thresh)
 
 
 
