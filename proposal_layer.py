@@ -40,6 +40,7 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     # rpn_bbox_pred shape : 1 , h , w , 4*9
     '''
 
+
     _anchors = generate_anchor.generate_anchors(scales=np.array(anchor_scales)) # #_anchors ( 9, 4 )
     _num_anchors = _anchors.shape[0] #9
     rpn_bbox_cls_prob = np.transpose(rpn_bbox_cls_prob, [0, 3, 1, 2]) # rpn bbox _cls prob # 1, 18 , h , w
@@ -63,9 +64,20 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     # the second set are the fg probs
 
 
-    scores = rpn_bbox_cls_prob[:,  _num_anchors : , :, :] # 1, 18  , H, W --> 1, 9, H, W
     # 1. Generate proposals from bbox deltas and shifted anchors
-    height, width = scores.shape[-2:]
+    n, ch , height, width = rpn_bbox_cls_prob.shape
+    ## rpn bbox _cls prob # 1, 18 , h , w
+    scores = rpn_bbox_cls_prob.reshape([1,2, ch//2 *  height ,width])
+
+    scores = scores.transpose([0,2,3,1])
+    scores = scores.reshape([-1,2])
+    scores = scores[:,1]
+    scores =scores.reshape([-1,1])
+    scores_ori = scores
+
+
+
+
     # Enumerate all shifts
     shift_x = np.arange(0, width) * _feat_stride
     shift_y = np.arange(0, height) * _feat_stride
@@ -96,8 +108,7 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     rpn_bbox_pred = rpn_bbox_pred.reshape([-1,4])
     bbox_deltas=rpn_bbox_pred
     ## CLS TRANSPOSE
-    scores = scores.transpose((0, 2, 3, 1)).reshape((-1, 1)) # (h * w * A , 1)
-    scores_ori = scores
+
     ## BBOX TRANSPOSE Using Anchor
     proposals = bbox_transform_inv(anchors, bbox_deltas)
     proposals_ori = proposals
@@ -110,22 +121,26 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     # 5. take top pre_nms_topN (e.g. 6000)
     #print 'scores : ',np.shape(scores) #421 ,13 <--여기 13이 자꾸 바귄다..
     order = scores.ravel().argsort()[::-1] # 크기 순서를 뒤집는다 가장 큰 값이 먼저 오게 한다
-
-
     if pre_nms_topN > 0: #120000
         order = order[:pre_nms_topN]
     #print np.sum([scores>0.7])
     scores = scores[order]
 
+
     # 6. apply nms (e.g. threshold = 0.7)
     # 7. take after_nms_topN (e.g. 300)
     # 8. return the top proposals (-> RoIs top)
     #print np.shape(np.hstack ((proposals , scores))) # --> [x_start , y_start ,x_end, y_end , score ] 이런 형태로 만든다
+    # proposals ndim and scores ndim must be same
     keep = nms(np.hstack((proposals, scores)), nms_thresh) # nms_thresh = 0.7 | hstack --> axis =1
+
+
+
     if post_nms_topN > 0:
         keep = keep[:post_nms_topN]
     proposals = proposals[keep, :]
     scores = scores[keep]
+
 
     # Output rois blob
     # Our RPN implementation only supports a single input image, so all
@@ -133,6 +148,8 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     batch_inds = np.zeros((proposals.shape[0], 1), dtype=np.float32)
     blob = np.hstack((batch_inds, proposals.astype(np.float32, copy=False))) # N , 5
     #blob=np.hstack((blob , scores))
+
+
 
 
 

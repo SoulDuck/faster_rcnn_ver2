@@ -1,3 +1,4 @@
+#-*- coding:utf-8 -*-
 import tensorflow as tf
 import numpy as np
 from utils import next_img_gtboxes , draw_rectangles
@@ -42,7 +43,7 @@ anchor_scales = [3, 4, 5]
 inv_blobs_op  , target_inv_blobs_op = inv_transform_layer(rpn_bbox_pred ,  cfg_key = phase_train , \
                                         _feat_stride = _feat_stride , anchor_scales =anchor_scales , indices = indice_op)
 
-roi_blobs_op, roi_scores_op , roi_blobs_ori_op ,roi_scores_ori_op  = roi.roi_proposal(rpn_cls , rpn_bbox_pred , im_dims , _feat_stride , anchor_scales ,is_training=True)
+roi_blobs_op, roi_scores_op , roi_blobs_ori_op ,roi_scores_ori_op  , roi_softmax_op = roi.roi_proposal(rpn_cls , rpn_bbox_pred , im_dims , _feat_stride , anchor_scales ,is_training=True)
 cost_op = rpn_cls_loss_op + rpn_bbox_loss_op
 train_cls_op = optimizer(rpn_cls_loss_op , lr=0.01)
 train_bbox_op = optimizer(rpn_bbox_loss_op , lr = 0.001)
@@ -70,15 +71,15 @@ for i in range(2,max_iter):
                  indice_op:indices
                  }
 
-    rpn_labels,cls_cost,bbox_cost ,_ ,rpn_cls_value, A, B,diff, C, D ,E ,F , roi_blobs ,roi_scores  , target_inv_blobs = sess.run(
-        fetches=[rpn_labels_op,rpn_cls_loss_op, rpn_bbox_loss_op, train_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op, E_op, F_op,
+    rpn_labels,cls_cost,bbox_cost  ,rpn_cls_value, A, B,diff, C, D ,E ,F , roi_blobs ,roi_scores  , target_inv_blobs = sess.run(
+        fetches=[rpn_labels_op,rpn_cls_loss_op, rpn_bbox_loss_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op, E_op, F_op,
                  roi_blobs_op, roi_scores_op, target_inv_blobs_op], feed_dict=feed_dict)
-    roi_blobs_ori, roi_scores_ori = sess.run(fetches=[roi_blobs_ori_op ,roi_scores_ori_op  ], feed_dict=feed_dict)
 
+    roi_blobs_ori, roi_scores_ori ,roi_softmax= sess.run(fetches=[roi_blobs_ori_op ,roi_scores_ori_op  ,roi_softmax_op], feed_dict=feed_dict)
+    _ = sess.run(fetches=[train_op], feed_dict=feed_dict)
     pos_blobs=roi_blobs[np.where([roi_scores > 0.5])[1]]
     if i % 200 ==0:
         print
-
         print 'RPN CLS LOSS : \t', cls_cost
         print 'RPN BBOX LOSS \t', bbox_cost
         print 'POS BBOX \t', pos_blobs
@@ -95,16 +96,31 @@ for i in range(2,max_iter):
         print 'indices binary ',B
         print 'rpn_labels_op',rpn_labels_op
         print 'target_inv_bbox ' , target_inv_blobs
-        print roi_blobs_ori[indices]
-        exit()
+        print 'rpn_cls_value \t',np.shape(rpn_cls_value)
+        """ RPN CLS 변환 """
+        n,h,w,ch=rpn_cls_value.shape
+        rpn_cls_value=rpn_cls_value.transpose([0,3,1,2])
+        rpn_cls_value=rpn_cls_value.reshape([1,2,ch//2 * h , w])
+        rpn_cls_value = rpn_cls_value.transpose([0,2,3,1])
+        rpn_cls_value=rpn_cls_value.reshape([-1,2])
 
 
-        savepath = './result/{}.png'.format(i)
+        roi_softmax=roi_softmax.transpose([0,3,1,2])
+        roi_softmax=roi_softmax.reshape([1,2,ch//2 * h , w])
+        roi_softmax = roi_softmax.transpose([0,2,3,1])
+        roi_softmax = roi_softmax.reshape([-1, 2])
+
+        print 'POS rpn_cls_value PROB ',rpn_cls_value[indices]
+        print 'POS SOFTMAX PROB , {}'.format(roi_softmax[indices])
+        print 'ROI BBOX 에서 ANCHOR같은 indices 을 뽑은것 ',roi_blobs_ori[indices]
+        print 'ROI CLS 에서 ANCHOR같은 indices 을 뽑은것',roi_scores_ori[indices]
+
+        savepath_anchor = './result_anchor/{}.png'.format(i)
+        savepath_roi = './result_roi/{}.png'.format(i)
         src_img=np.squeeze(src_img)
         target_inv_blobs=target_inv_blobs.astype(np.int)
-        print np.shape(src_img)
-        print target_inv_blobs
-        draw_rectangles(src_img ,pos_blobs[:,1:], savepath)
+
+        draw_rectangles(src_img, roi_blobs_ori[indices], savepath_roi ,color='r')
 
     sys.stdout.write('\r Progress {} {}'.format(i,max_iter))
     sys.stdout.flush()

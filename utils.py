@@ -29,7 +29,7 @@ def next_img_gtboxes(image_idx):
     return img , gt_bbox
 
 
-def draw_rectangles(img ,bboxes , savepath):
+def draw_rectangles(img ,bboxes , savepath , color):
     ax = plt.axes()
     plt.imshow(img)
     h,w=np.shape(img)
@@ -40,7 +40,7 @@ def draw_rectangles(img ,bboxes , savepath):
         if x1 >0 and y1 >0 and x2 > 0 and y2 > 0 and x2 > x1 and y2 > y1 and w > x2 and y2 < h :
             print x1, y1, x2, y2
             print np.shape(img)
-            rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor='r', facecolor='none')
+            rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor=color, facecolor='none')
             ax.add_patch(rect)
         else:
             continue
