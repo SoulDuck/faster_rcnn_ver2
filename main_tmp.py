@@ -120,7 +120,7 @@ for i in range(2,max_iter):
         src_img=np.squeeze(src_img)
         target_inv_blobs=target_inv_blobs.astype(np.int)
 
-        draw_rectangles(src_img, roi_blobs_ori[indices], savepath_roi ,color='r')
+        draw_rectangles(src_img, roi_blobs[:,1:], savepath_roi ,color='r')
 
     sys.stdout.write('\r Progress {} {}'.format(i,max_iter))
     sys.stdout.flush()
