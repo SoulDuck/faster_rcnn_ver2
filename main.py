@@ -48,7 +48,7 @@ for i in range(2,55000 * 100):
     src_im_dims = [(h,w)]
     anchor_scales = [3,4,5]
     rpn_cls_score=np.zeros([1,int(math.ceil(h/8.)),int(math.ceil(w/8.)),512])
-    rpn_labels, rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights, bbox_targets, bbox_inside_weights, bbox_outside_weights = anchor_target(
+        rpn_labels, rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights, bbox_targets, bbox_inside_weights, bbox_outside_weights = anchor_target(
         rpn_cls_score=rpn_cls_score, gt_boxes=src_gt_boxes, im_dims=src_im_dims, _feat_stride=8, anchor_scales=anchor_scales)
 
     """
@@ -78,6 +78,7 @@ for i in range(2,55000 * 100):
                  }
     cost, _ ,rpn_cls_value, A, B, diff, C, D ,E ,F= sess.run(
         fetches=[rpn_cls_loss_op, rpn_cls_train_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op ,E_op ,F_op], feed_dict=feed_dict)
+    """
     print '#### indices ####'
     print F
     print '#### cos ####'
@@ -99,6 +100,6 @@ for i in range(2,55000 * 100):
         if np.sum(e) > 0:
             print i
             print e
-    exit()
+    """
 
 
