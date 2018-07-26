@@ -3,7 +3,7 @@ import numpy as np
 from utils import next_img_gtboxes , draw_rectangles
 from anchor_target_layer import anchor_target
 from convnet import define_placeholder , simple_convnet , rpn_cls_layer , rpn_bbox_layer , sess_start , optimizer ,rpn_cls_loss , rpn_bbox_loss ,bbox_loss
-from proposal_layer import inv_transform_layer
+from proposal_layer import inv_transform_layer , proposal_layer
 import math
 
 
@@ -29,10 +29,6 @@ rpn_bbox_pred = rpn_bbox_layer(top_conv)
 # B_1_op : indices
 rpn_cls_loss_op ,A_op ,B_op  = rpn_cls_loss(rpn_cls , rpn_labels_op) # rpn_labels_op 1 ,1 h ,w
 
-
-
-
-
 # BBOX LOSS
 # C_op : indiced rpn bbox  pred op
 # D_op : indiced rpn target  op
@@ -48,9 +44,7 @@ anchor_scales = [3, 4, 5]
 inv_blobs_op  , target_inv_blobs_op = inv_transform_layer(rpn_bbox_pred ,  cfg_key = phase_train , \
                                         _feat_stride = _feat_stride , anchor_scales =anchor_scales , indices = indice_op)
 
-
-
-blobs_op, scores_op= roi.roi_proposal(rpn_cls , rpn_bbox_pred , im_dims , _feat_stride , anchor_scales ,is_training=True)
+roi_blobs_op, roi_scores_op = roi.roi_proposal(rpn_cls , rpn_bbox_pred , im_dims , _feat_stride , anchor_scales ,is_training=True)
 cost_op = rpn_cls_loss_op + rpn_bbox_loss_op
 train_cls_op = optimizer(rpn_cls_loss_op , lr=0.01)
 train_bbox_op = optimizer(rpn_bbox_loss_op , lr = 0.001)
@@ -68,7 +62,7 @@ for i in range(2,max_iter):
         rpn_cls_score=rpn_cls_score, gt_boxes=src_gt_boxes, im_dims=src_im_dims, _feat_stride=8, anchor_scales=anchor_scales)
     indices=np.where([np.reshape(rpn_labels,[-1])>0])[1]
 
-    # utils here
+
     src_img=src_img.reshape([1]+list(np.shape(src_img))+[1])
     feed_dict = {x_: src_img, im_dims: src_im_dims, gt_boxes: src_gt_boxes, phase_train: True,
                  rpn_labels_op: rpn_labels,
@@ -77,20 +71,19 @@ for i in range(2,max_iter):
                  bbox_outside_weights_op : bbox_outside_weights,
                  indice_op:indices
                  }
-    if i < 10000:
-        rpn_labels,cls_cost,bbox_cost ,_ ,rpn_cls_value, A, B,diff, C, D ,E ,F , blobs ,scores  , target_inv_blobs= sess.run(
-            fetches=[rpn_labels_op,rpn_cls_loss_op, rpn_bbox_loss_op, train_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op, E_op, F_op,
-                     blobs_op, scores_op, target_inv_blobs_op], feed_dict=feed_dict)
-    else:
-        rpn_labels,cls_cost,bbox_cost , _ ,rpn_cls_value, A, B,diff, C, D ,E ,F , blobs ,scores , target_inv_blobs= sess.run(
-            fetches=[rpn_labels_op,rpn_cls_loss_op, rpn_bbox_loss_op, train_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op, E_op, F_op,
-                     blobs_op, scores_op, target_inv_blobs_op], feed_dict=feed_dict)
-    pos_blobs=blobs[np.where([scores > 0.5])[1]]
+
+    rpn_labels,cls_cost,bbox_cost ,_ ,rpn_cls_value, A, B,diff, C, D ,E ,F , roi_blobs ,roi_scores  , target_inv_blobs= sess.run(
+        fetches=[rpn_labels_op,rpn_cls_loss_op, rpn_bbox_loss_op, train_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op, E_op, F_op,
+                 roi_blobs_op, roi_scores_op, target_inv_blobs_op], feed_dict=feed_dict)
+    pos_blobs=roi_blobs[np.where([roi_scores > 0.5])[1]]
     if i % 200 ==0:
         print
         print 'RPN CLS LOSS : \t', cls_cost
         print 'RPN BBOX LOSS \t', bbox_cost
         print 'POS BBOX \t', pos_blobs
+        print 'ROI SCORE \t', np.shape(roi_scores)
+        print 'ROI BLOBS \t', np.shape(pos_blobs)
+
         print 'RPN CLS prediction ',A
         print 'indiced Pred bbox',C
         print 'indiced target bbox', D
@@ -99,13 +92,13 @@ for i in range(2,max_iter):
         print 'indices binary ',B
         print 'rpn_labels_op',rpn_labels_op
         print 'target_inv_bbox ' , target_inv_blobs
-        print len(pos_blobs)
+
         savepath = './result/{}.png'.format(i)
         src_img=np.squeeze(src_img)
         target_inv_blobs=target_inv_blobs.astype(np.int)
         print np.shape(src_img)
         print target_inv_blobs
-        draw_rectangles(src_img ,target_inv_blobs, savepath)
+        draw_rectangles(src_img ,pos_blobs, savepath)
 
     sys.stdout.write('\r Progress {} {}'.format(i,max_iter))
     sys.stdout.flush()
