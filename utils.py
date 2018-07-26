@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 def next_img_gtboxes(image_idx):
     IMAGE_FORMAT= '.png'
-    data_dir='../faster_rcnn/clutteredMNIST'
+    data_dir='../clutteredMNIST'
     train_name_path = os.path.join(data_dir, 'Names', 'train.txt')
     train_names = [line.rstrip() for line in open(train_name_path, 'r')]
     if image_idx > (len(train_names)-1) :
