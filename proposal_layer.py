@@ -14,6 +14,8 @@ def proposal_layer(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat_str
     blobs , scores =tf.py_func(_proposal_layer_py,
                                  [rpn_bbox_cls_prob, rpn_bbox_pred, im_dims[0], cfg_key, _feat_stride, anchor_scales],
                                  [tf.float32 , tf.float32 ])
+
+    # im_dims ==> [[137 188]]
     blobs=tf.reshape(blobs , shape=[-1,5])
     scores=tf.reshape(scores , shape=[-1])
     return blobs ,  scores
@@ -32,7 +34,10 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     # apply NMS with threshold 0.7 to remaining proposals
     # take after_nms_topN proposals after NMS
     # return the top proposals (-> RoIs top, scores top)
+    # rpn_bbox_cls_prob shape : 1 , h , w , 2*9
+    # rpn_bbox_pred shape : 1 , h , w , 4*9
     '''
+
     _anchors = generate_anchor.generate_anchors(scales=np.array(anchor_scales)) # #_anchors ( 9, 4 )
     _num_anchors = _anchors.shape[0] #9
     rpn_bbox_cls_prob = np.transpose(rpn_bbox_cls_prob, [0, 3, 1, 2]) # rpn bbox _cls prob # 1, 18 , h , w
@@ -57,7 +62,7 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
 
 
     scores = rpn_bbox_cls_prob[:,  _num_anchors : , :, :] # 1, 18  , H, W --> 1, 9, H, W
-    bbox_deltas = rpn_bbox_pred
+
 
     # 1. Generate proposals from bbox deltas and shifted anchors
     height, width = scores.shape[-2:]
@@ -83,11 +88,16 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
         else:
             anchors = np.concatenate((anchors, np.add(shifts, _anchors[i])), axis=0)
     anchors = anchors.reshape((K * A, 4))
-    bbox_deltas = bbox_deltas.transpose((0, 2, 3, 1)).reshape((-1, 4))
 
+    ## BBOX TRANSPOSE (1,4*A,H,W --> A*H*W,4)
+    shape = rpn_bbox_pred.shape # 1,4*A , H, W
+    rpn_bbox_pred=rpn_bbox_pred.reshape([1, 4 , (shape[1]//4)*shape[2] , shape[3] ])
+    rpn_bbox_pred=rpn_bbox_pred.transpose([0,2,3,1])
+    rpn_bbox_pred = rpn_bbox_pred.reshape([-1,4])
+    bbox_deltas=rpn_bbox_pred
+    ## CLS TRANSPOSE
     scores = scores.transpose((0, 2, 3, 1)).reshape((-1, 1)) # (h * w * A , 1)
-    # anchors ,bbox_deltas , scores 모두 같은 shape 여야 한다
-
+    ## BBOX TRANSPOSE Using Anchor
     proposals = bbox_transform_inv(anchors, bbox_deltas)
     proposals = clip_boxes(proposals, im_dims) # image size 보다 큰 proposals 들이 줄어 들수 있도록 한다.
     keep = _filter_boxes(proposals, min_size) # min size = 16 # min보다 큰 놈들만 살아남았다
