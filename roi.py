@@ -30,12 +30,12 @@ def roi_proposal(rpn_cls_layer , rpn_bbox_layer, im_dims , _feat_stride , anchor
     num_classes = 10 + 1  # 1 -> background
 
     rpn_cls_prob = _rpn_softmax(rpn_cls_layer)
-    blobs, scores = proposal_layer.proposal_layer(rpn_bbox_cls_prob=rpn_cls_prob,
+    blobs, scores , blobs_ori , scores_ori = proposal_layer.proposal_layer(rpn_bbox_cls_prob=rpn_cls_prob,
                                                             rpn_bbox_pred=rpn_bbox_layer,
                                                             im_dims=im_dims, cfg_key=is_training,
                                                             _feat_stride=_feat_stride,
                                                             anchor_scales=anchor_scales)
-    return blobs , scores
+    return blobs , scores ,blobs_ori , scores_ori
     """
     if is_training:  # train
         # Calculate targets for proposals

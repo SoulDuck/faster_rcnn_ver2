@@ -11,14 +11,16 @@ from nms_wrapper import nms
 
 
 def proposal_layer(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat_stride, anchor_scales):
-    blobs , scores =tf.py_func(_proposal_layer_py,
+    blobs , scores  ,blobs_ori , scores_ori=tf.py_func(_proposal_layer_py,
                                  [rpn_bbox_cls_prob, rpn_bbox_pred, im_dims[0], cfg_key, _feat_stride, anchor_scales],
-                                 [tf.float32 , tf.float32 ])
+                                 [tf.float32 , tf.float32 ,tf.float32 , tf.float32 ])
 
     # im_dims ==> [[137 188]]
     blobs=tf.reshape(blobs , shape=[-1,5])
+    blobs_ori=tf.reshape(blobs_ori, shape=[-1,4])
     scores=tf.reshape(scores , shape=[-1])
-    return blobs ,  scores
+    scores_ori = tf.reshape(scores_ori, shape=[-1])
+    return blobs ,  scores , blobs_ori , scores_ori
 
 def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat_stride, anchor_scales):
     '''
@@ -62,8 +64,6 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
 
 
     scores = rpn_bbox_cls_prob[:,  _num_anchors : , :, :] # 1, 18  , H, W --> 1, 9, H, W
-
-
     # 1. Generate proposals from bbox deltas and shifted anchors
     height, width = scores.shape[-2:]
     # Enumerate all shifts
@@ -97,11 +97,12 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     bbox_deltas=rpn_bbox_pred
     ## CLS TRANSPOSE
     scores = scores.transpose((0, 2, 3, 1)).reshape((-1, 1)) # (h * w * A , 1)
+    scores_ori = scores
     ## BBOX TRANSPOSE Using Anchor
     proposals = bbox_transform_inv(anchors, bbox_deltas)
+    proposals_ori = proposals
     proposals = clip_boxes(proposals, im_dims) # image size 보다 큰 proposals 들이 줄어 들수 있도록 한다.
     keep = _filter_boxes(proposals, min_size) # min size = 16 # min보다 큰 놈들만 살아남았다
-
     proposals = proposals[keep, :]
     scores = scores[keep]
 
@@ -110,11 +111,10 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     #print 'scores : ',np.shape(scores) #421 ,13 <--여기 13이 자꾸 바귄다..
     order = scores.ravel().argsort()[::-1] # 크기 순서를 뒤집는다 가장 큰 값이 먼저 오게 한다
 
+
     if pre_nms_topN > 0: #120000
         order = order[:pre_nms_topN]
     #print np.sum([scores>0.7])
-
-    proposals = proposals[order, :]
     scores = scores[order]
 
     # 6. apply nms (e.g. threshold = 0.7)
@@ -124,8 +124,6 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     keep = nms(np.hstack((proposals, scores)), nms_thresh) # nms_thresh = 0.7 | hstack --> axis =1
     if post_nms_topN > 0:
         keep = keep[:post_nms_topN]
-    #print post_nms_topN
-
     proposals = proposals[keep, :]
     scores = scores[keep]
 
@@ -134,10 +132,11 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     # batch inds are 0
     batch_inds = np.zeros((proposals.shape[0], 1), dtype=np.float32)
     blob = np.hstack((batch_inds, proposals.astype(np.float32, copy=False))) # N , 5
-
     #blob=np.hstack((blob , scores))
 
-    return blob , scores
+
+
+    return blob , scores , proposals_ori , scores_ori
 
 def _filter_boxes(boxes, min_size):
     """Remove all boxes with any side smaller than min_size."""

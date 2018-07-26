@@ -42,7 +42,7 @@ anchor_scales = [3, 4, 5]
 inv_blobs_op  , target_inv_blobs_op = inv_transform_layer(rpn_bbox_pred ,  cfg_key = phase_train , \
                                         _feat_stride = _feat_stride , anchor_scales =anchor_scales , indices = indice_op)
 
-roi_blobs_op, roi_scores_op = roi.roi_proposal(rpn_cls , rpn_bbox_pred , im_dims , _feat_stride , anchor_scales ,is_training=True)
+roi_blobs_op, roi_scores_op , roi_blobs_ori_op ,roi_scores_ori_op  = roi.roi_proposal(rpn_cls , rpn_bbox_pred , im_dims , _feat_stride , anchor_scales ,is_training=True)
 cost_op = rpn_cls_loss_op + rpn_bbox_loss_op
 train_cls_op = optimizer(rpn_cls_loss_op , lr=0.01)
 train_bbox_op = optimizer(rpn_bbox_loss_op , lr = 0.001)
@@ -70,18 +70,22 @@ for i in range(2,max_iter):
                  indice_op:indices
                  }
 
-    rpn_labels,cls_cost,bbox_cost ,_ ,rpn_cls_value, A, B,diff, C, D ,E ,F , roi_blobs ,roi_scores  , target_inv_blobs= sess.run(
+    rpn_labels,cls_cost,bbox_cost ,_ ,rpn_cls_value, A, B,diff, C, D ,E ,F , roi_blobs ,roi_scores  , target_inv_blobs = sess.run(
         fetches=[rpn_labels_op,rpn_cls_loss_op, rpn_bbox_loss_op, train_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op, E_op, F_op,
                  roi_blobs_op, roi_scores_op, target_inv_blobs_op], feed_dict=feed_dict)
+    roi_blobs_ori, roi_scores_ori = sess.run(fetches=[roi_blobs_ori_op ,roi_scores_ori_op  ], feed_dict=feed_dict)
+
     pos_blobs=roi_blobs[np.where([roi_scores > 0.5])[1]]
     if i % 200 ==0:
         print
+
         print 'RPN CLS LOSS : \t', cls_cost
         print 'RPN BBOX LOSS \t', bbox_cost
         print 'POS BBOX \t', pos_blobs
         print 'ROI SCORE \t', np.shape(roi_scores)
         print 'ROI BLOBS \t', np.shape(roi_blobs)
         print 'ROI POS BLOBS \t', np.shape(pos_blobs)
+        print 'ANCHOR POS INDICE \t',indices
 
         print 'RPN CLS prediction ',A
         print 'indiced Pred bbox',C
@@ -91,6 +95,9 @@ for i in range(2,max_iter):
         print 'indices binary ',B
         print 'rpn_labels_op',rpn_labels_op
         print 'target_inv_bbox ' , target_inv_blobs
+        print roi_blobs_ori[indices]
+        exit()
+
 
         savepath = './result/{}.png'.format(i)
         src_img=np.squeeze(src_img)
