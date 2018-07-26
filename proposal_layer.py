@@ -121,8 +121,6 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     #print np.sum([scores>0.7])
     scores = scores[order]
 
-
-    print scores.T
     # 6. apply nms (e.g. threshold = 0.7)
     # 7. take after_nms_topN (e.g. 300)
     # 8. return the top proposals (-> RoIs top)

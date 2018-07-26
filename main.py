@@ -71,7 +71,7 @@ for i in range(2,max_iter):
                  indice_op:indices
                  }
 
-    rpn_labels,cls_cost,bbox_cost  ,rpn_cls_value, A, B,diff, C, D ,E ,F , roi_blobs ,roi_scores  , target_inv_blobs = sess.run(
+    rpn_labels,cls_cost, bbox_cost  ,rpn_cls_value, A, B,diff, C, D ,E ,F , roi_blobs ,roi_scores  , target_inv_blobs = sess.run(
         fetches=[rpn_labels_op,rpn_cls_loss_op, rpn_bbox_loss_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op, E_op, F_op,
                  roi_blobs_op, roi_scores_op, target_inv_blobs_op], feed_dict=feed_dict)
 
