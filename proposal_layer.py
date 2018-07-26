@@ -39,8 +39,6 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     # rpn_bbox_cls_prob shape : 1 , h , w , 2*9
     # rpn_bbox_pred shape : 1 , h , w , 4*9
     '''
-
-
     _anchors = generate_anchor.generate_anchors(scales=np.array(anchor_scales)) # #_anchors ( 9, 4 )
     _num_anchors = _anchors.shape[0] #9
     rpn_bbox_cls_prob = np.transpose(rpn_bbox_cls_prob, [0, 3, 1, 2]) # rpn bbox _cls prob # 1, 18 , h , w

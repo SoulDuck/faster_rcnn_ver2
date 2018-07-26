@@ -29,17 +29,31 @@ def next_img_gtboxes(image_idx):
     return img , gt_bbox
 
 
-def draw_rectangles(img ,bboxes , savepath , color):
+def draw_rectangles(img ,bboxes ,scores ,  savepath , color):
     ax = plt.axes()
     plt.imshow(img)
     h,w=np.shape(img)
-    for box in bboxes:
+    pos_bboxes_indices = np.where([scores >= 0.5])[1]
+    neg_bboxes_indices = np.where([scores < 0.5])[1]
+    pos_bboxes=bboxes[pos_bboxes_indices]
+    neg_bboxes = bboxes[neg_bboxes_indices]
+
+
+    for box in pos_bboxes:
         x1, y1, x2, y2= box  # x1 ,y1 ,x2 ,y2
         if x1 >0 and y1 >0 and x2 > 0 and y2 > 0 and x2 > x1 and y2 > y1 and w > x2 and y2 < h :
-            rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor=color, facecolor='none')
+            rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor='b', facecolor='none')
             ax.add_patch(rect)
         else:
             continue
+    for box in neg_bboxes:
+        x1, y1, x2, y2 = box  # x1 ,y1 ,x2 ,y2
+        if x1 > 0 and y1 > 0 and x2 > 0 and y2 > 0 and x2 > x1 and y2 > y1 and w > x2 and y2 < h:
+            rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor='r', facecolor='none')
+            ax.add_patch(rect)
+        else:
+            continue
+
     plt.savefig(savepath)
     plt.close()
 
