@@ -80,8 +80,6 @@ for i in range(2,max_iter):
     pos_blobs=roi_blobs[np.where([roi_scores > 0.5])[1]]
     if i % 200 ==0:
         print
-
-        print 'RPN BBOX LOSS \t', bbox_cost
         print 'POS BBOX \t', pos_blobs
         print 'ROI SCORE \t', np.shape(roi_scores)
         print 'ROI BLOBS \t', np.shape(roi_blobs)
@@ -115,6 +113,7 @@ for i in range(2,max_iter):
         print 'ROI BBOX 에서 ANCHOR같은 indices 을 뽑은것 ',roi_blobs_ori[indices]
         print 'ROI CLS 에서 ANCHOR같은 indices 을 뽑은것',roi_scores_ori[indices]
         print 'RPN CLS LOSS : \t', cls_cost
+        print 'RPN BBOX LOSS \t', bbox_cost
         savepath_anchor = './result_anchor/{}.png'.format(i)
         savepath_roi = './result_roi/{}.png'.format(i)
         src_img=np.squeeze(src_img)
