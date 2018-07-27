@@ -102,7 +102,6 @@ for i in range(2,max_iter):
         rpn_cls_value = rpn_cls_value.transpose([0,2,3,1])
         rpn_cls_value=rpn_cls_value.reshape([-1,2])
 
-
         roi_softmax=roi_softmax.transpose([0,3,1,2])
         roi_softmax=roi_softmax.reshape([1,2,ch//2 * h , w])
         roi_softmax = roi_softmax.transpose([0,2,3,1])
@@ -118,7 +117,7 @@ for i in range(2,max_iter):
         savepath_roi = './result_roi/{}.png'.format(i)
         src_img=np.squeeze(src_img)
         target_inv_blobs=target_inv_blobs.astype(np.int)
-        draw_rectangles(src_img, roi_blobs[:,1:], roi_scores, savepath_roi ,color='r')
+        draw_rectangles(src_img, roi_blobs[:,1:], roi_scores, target_inv_blobs , savepath_roi ,color='r')
 
     sys.stdout.write('\r Progress {} {}'.format(i,max_iter))
     sys.stdout.flush()
