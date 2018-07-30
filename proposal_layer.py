@@ -43,6 +43,7 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     _num_anchors = _anchors.shape[0] #9
     rpn_bbox_cls_prob = np.transpose(rpn_bbox_cls_prob, [0, 3, 1, 2]) # rpn bbox _cls prob # 1, 18 , h , w
     rpn_bbox_pred = np.transpose(rpn_bbox_pred, [0, 3, 1, 2]) # 1, 36 , h , w
+
     # Only minibatch of 1 supported
     assert rpn_bbox_cls_prob.shape[0] == 1, \
         'Only single item batches are supported'
@@ -62,9 +63,9 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     # the second set are the fg probs
     # 1. Generate proposals from bbox deltas and shifted anchors
     n, ch , height, width = rpn_bbox_cls_prob.shape
+
     ## rpn bbox _cls prob # 1, 18 , h , w
     scores = rpn_bbox_cls_prob.reshape([1,2, ch//2 *  height ,width])
-
     scores = scores.transpose([0,2,3,1])
     scores = scores.reshape([-1,2])
     scores = scores[:,1]
