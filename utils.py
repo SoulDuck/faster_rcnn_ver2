@@ -39,6 +39,7 @@ def draw_rectangles(img ,bboxes ,scores , anchors,  savepath , color):
     neg_bboxes = bboxes[neg_bboxes_indices]
 
 
+    # DRAW POS BBOX
     for box in pos_bboxes:
         x1, y1, x2, y2= box  # x1 ,y1 ,x2 ,y2
         if x1 >0 and y1 >0 and x2 > 0 and y2 > 0 and x2 > x1 and y2 > y1 and w > x2 and y2 < h :
@@ -46,6 +47,13 @@ def draw_rectangles(img ,bboxes ,scores , anchors,  savepath , color):
             ax.add_patch(rect)
         else:
             continue
+    plt.savefig(savepath.replace('roi' , 'pos_roi'))
+    plt.close()
+
+    # DRAW NEG BBOX
+    ax = plt.axes()
+    plt.imshow(img)
+    h,w=np.shape(img)
     for box in neg_bboxes:
         x1, y1, x2, y2 = box  # x1 ,y1 ,x2 ,y2
         if x1 > 0 and y1 > 0 and x2 > 0 and y2 > 0 and x2 > x1 and y2 > y1 and w > x2 and y2 < h:
@@ -53,18 +61,23 @@ def draw_rectangles(img ,bboxes ,scores , anchors,  savepath , color):
             ax.add_patch(rect)
         else:
             continue
+
+    plt.savefig(savepath.replace('roi', 'neg_roi'))
+    plt.close()
+    # DRAW ANCHOR BBOX
+    ax = plt.axes()
+    plt.imshow(img)
+    h,w=np.shape(img)
     for box in anchors:
+        print box
         x1, y1, x2, y2 = box  # x1 ,y1 ,x2 ,y2
         if x1 > 0 and y1 > 0 and x2 > 0 and y2 > 0 and x2 > x1 and y2 > y1 and w > x2 and y2 < h:
             rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor='g', facecolor='none')
             ax.add_patch(rect)
         else:
             continue
-
-    plt.savefig(savepath)
+    plt.savefig(savepath.replace('roi', 'anchor'))
     plt.close()
-
-
 
 
 if '__main__' == __name__:
