@@ -60,8 +60,6 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
 
     # the first set of _num_anchors channels are bg probs
     # the second set are the fg probs
-
-
     # 1. Generate proposals from bbox deltas and shifted anchors
     n, ch , height, width = rpn_bbox_cls_prob.shape
     ## rpn bbox _cls prob # 1, 18 , h , w
@@ -140,11 +138,6 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     batch_inds = np.zeros((proposals.shape[0], 1), dtype=np.float32)
     blob = np.hstack((batch_inds, proposals.astype(np.float32, copy=False))) # N , 5
     #blob=np.hstack((blob , scores))
-
-
-
-
-
     return blob , scores , proposals_ori , scores_ori
 
 def _filter_boxes(boxes, min_size):
