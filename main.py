@@ -1,7 +1,7 @@
 #-*- coding:utf-8 -*-
 import tensorflow as tf
 import numpy as np
-from utils import next_img_gtboxes , draw_rectangles
+from utils import next_img_gtboxes , draw_rectangles , non_maximum_supression
 from anchor_target_layer import anchor_target
 from convnet import define_placeholder , simple_convnet , rpn_cls_layer , rpn_bbox_layer , sess_start , optimizer ,rpn_cls_loss , rpn_bbox_loss ,bbox_loss
 from proposal_layer import inv_transform_layer , proposal_layer
@@ -80,8 +80,7 @@ for i in range(2, max_iter):
     roi_blobs_ori, roi_scores_ori ,roi_softmax= sess.run(fetches=[roi_blobs_ori_op , roi_scores_ori_op  ,roi_softmax_op], feed_dict=feed_dict)
     _ = sess.run(fetches=[train_op], feed_dict=feed_dict)
     pos_blobs=roi_blobs[np.where([roi_scores > 0.5])[1]]
-    if i % 200 ==0:
-
+    if i % 1000 ==0:
         print 'POS BBOX \t', pos_blobs
         print 'ROI SCORE \t', np.shape(roi_scores)
         print 'ROI BLOBS \t', np.shape(roi_blobs)
@@ -97,6 +96,7 @@ for i in range(2, max_iter):
         print 'rpn_labels_op',rpn_labels_op
         print 'target_inv_bbox ' , target_inv_blobs
         print 'rpn_cls_value \t',np.shape(rpn_cls_value)
+
         """ RPN CLS 변환 """
         n,h,w,ch=rpn_cls_value.shape
         rpn_cls_value=rpn_cls_value.transpose([0,3,1,2])
@@ -108,6 +108,7 @@ for i in range(2, max_iter):
         roi_softmax=roi_softmax.reshape([1,2,ch//2 * h , w])
         roi_softmax = roi_softmax.transpose([0,2,3,1])
         roi_softmax = roi_softmax.reshape([-1, 2])
+
 
         print 'POS rpn_cls_value PROB ',rpn_cls_value[indices]
         print 'POS SOFTMAX PROB , {}'.format(roi_softmax[indices])
@@ -124,8 +125,16 @@ for i in range(2, max_iter):
         src_img=np.squeeze(src_img)
         target_inv_blobs=target_inv_blobs.astype(np.int)
         #draw_rectangles(src_img, roi_blobs[:,1:], roi_scores, target_inv_blobs , savepath_roi ,color='r')
-        print len(np.where([roi_scores_ori>0.5])[1])
-        draw_rectangles(src_img, roi_blobs_ori[:, :], roi_scores_ori, target_inv_blobs, savepath_roi, color='r')
+        pos_indices=np.where([roi_scores_ori>0.5])[1]
+
+        # NMS
+        dets=np.hstack([roi_blobs_ori[pos_indices] ,roi_scores_ori.reshape([-1,1])[pos_indices]] )
+        keep = non_maximum_supression(dets , 0.1)
+        draw_rectangles(src_img, roi_blobs_ori[:, :], roi_scores_ori, target_inv_blobs, roi_blobs_ori[pos_indices][keep],
+                        savepath_roi, color='r')
+
+        # Non Maximun Supress
+
 
 
     sys.stdout.write('\r Progress {} {}'.format(i,max_iter))

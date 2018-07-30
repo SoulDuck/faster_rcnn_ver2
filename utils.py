@@ -27,9 +27,34 @@ def next_img_gtboxes(image_idx):
     if np.max(img) > 1:
         img = img / 255.
     return img , gt_bbox
+def non_maximum_supression( dets, thresh):
+    x1 = dets[:, 0]
+    y1 = dets[:, 1]
+    x2 = dets[:, 2]
+    y2 = dets[:, 3]
+    scores = dets[:, 4]
+    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
+    order = scores.argsort()[::-1]
+    keep = []
+    while order.size > 0:
+        i = order[0]
+        keep.append(i)
 
+        xx1 = np.maximum(x1[i], x1[order[1:]]) # xx1 shape : [19,]
+        yy1 = np.maximum(y1[i], y1[order[1:]])
+        xx2 = np.minimum(x2[i], x2[order[1:]])
+        yy2 = np.minimum(y2[i], y2[order[1:]])
 
-def draw_rectangles(img ,bboxes ,scores , anchors,  savepath , color):
+        w = np.maximum(0.0, xx2 - xx1 + 1)
+        h = np.maximum(0.0, yy2 - yy1 + 1)
+
+        inter = w * h #inter shape : [ 19,]
+        ovr = inter / (areas[i] + areas[order[1:]] - inter)
+        inds = np.where(ovr <= thresh)[0]
+        order = order[inds + 1]
+    return keep
+
+def draw_rectangles(img ,bboxes ,scores , anchors, roi_nms_bbox , savepath , color):
     ax = plt.axes()
     plt.imshow(img)
     h,w=np.shape(img)
@@ -37,6 +62,7 @@ def draw_rectangles(img ,bboxes ,scores , anchors,  savepath , color):
     neg_bboxes_indices = np.where([scores < 0.5])[1]
     pos_bboxes=bboxes[pos_bboxes_indices]
     neg_bboxes = bboxes[neg_bboxes_indices]
+
 
 
     # DRAW POS BBOX
@@ -69,7 +95,7 @@ def draw_rectangles(img ,bboxes ,scores , anchors,  savepath , color):
     plt.imshow(img)
     h,w=np.shape(img)
     for box in anchors:
-        print box
+
         x1, y1, x2, y2 = box  # x1 ,y1 ,x2 ,y2
         if x1 > 0 and y1 > 0 and x2 > 0 and y2 > 0 and x2 > x1 and y2 > y1 and w > x2 and y2 < h:
             rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor='g', facecolor='none')
@@ -79,6 +105,20 @@ def draw_rectangles(img ,bboxes ,scores , anchors,  savepath , color):
     plt.savefig(savepath.replace('roi', 'anchor'))
     plt.close()
 
+    # DRAW Non Maximun Surpress
+    ax = plt.axes()
+    plt.imshow(img)
+    h,w=np.shape(img)
+    for box in roi_nms_bbox :
+
+        x1, y1, x2, y2 = box  # x1 ,y1 ,x2 ,y2
+        if x1 > 0 and y1 > 0 and x2 > 0 and y2 > 0 and x2 > x1 and y2 > y1 and w > x2 and y2 < h:
+            rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor='y', facecolor='none')
+            ax.add_patch(rect)
+        else:
+            continue
+    plt.savefig(savepath.replace('roi', 'nms_roi'))
+    plt.close()
 
 if '__main__' == __name__:
     img , gt_boxes =next_img_gtboxes(image_idx=1)
