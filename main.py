@@ -23,6 +23,10 @@ rpn_cls = rpn_cls_layer(top_conv)
 # RPN BBOX
 rpn_bbox_pred = rpn_bbox_layer(top_conv)
 
+#fast RCNN
+
+
+
 # CLS LOSS
 # A_op : rpn cls pred
 # B_op : binary_indices
