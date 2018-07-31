@@ -50,7 +50,7 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     if cfg_key == 'TRAIN':
         pre_nms_topN = cfg.TRAIN.RPN_PRE_NMS_TOP_N #12000
         post_nms_topN = cfg.TRAIN.RPN_POST_NMS_TOP_N # 2000
-        nms_thresh = cfg.TRAIN.RPN_NMS_THRESH #0.7
+        nms_thresh = cfg.TRAIN.RPN_NMS_THRESH #0.1
         min_size = cfg.TRAIN.RPN_MIN_SIZE # 16
 
     else:  # cfg_key == 'TEST':
@@ -119,14 +119,12 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
         order = order[:pre_nms_topN]
     #print np.sum([scores>0.7])
     scores = scores[order]
-
     # 6. apply nms (e.g. threshold = 0.7)
     # 7. take after_nms_topN (e.g. 300)
     # 8. return the top proposals (-> RoIs top)
     #print np.shape(np.hstack ((proposals , scores))) # --> [x_start , y_start ,x_end, y_end , score ] 이런 형태로 만든다
     # proposals ndim and scores ndim must be same
     keep = nms(np.hstack((proposals, scores)), nms_thresh) # nms_thresh = 0.7 | hstack --> axis =1
-
     #keep = non_maximum_supression(proposals , nms_thresh)
     if post_nms_topN > 0:
         keep = keep[:post_nms_topN]
@@ -138,7 +136,6 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     # batch inds are 0
     batch_inds = np.zeros((proposals.shape[0], 1), dtype=np.float32)
     blob = np.hstack((batch_inds, proposals.astype(np.float32, copy=False))) # N , 5
-    #blob=np.hstack((blob , scores))
     return blob , scores , proposals_ori , scores_ori
 
 def _filter_boxes(boxes, min_size):

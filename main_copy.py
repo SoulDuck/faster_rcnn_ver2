@@ -5,7 +5,6 @@ from utils import next_img_gtboxes , draw_rectangles , non_maximum_supression
 from anchor_target_layer import anchor_target
 from convnet import define_placeholder , simple_convnet , rpn_cls_layer , rpn_bbox_layer , sess_start , optimizer ,rpn_cls_loss , rpn_bbox_loss ,bbox_loss
 from proposal_layer import inv_transform_layer , proposal_layer
-from fast_rcnn import fast_rcnn
 import math
 import roi
 import sys
@@ -23,9 +22,9 @@ top_conv, _feat_stride = simple_convnet(x_)
 rpn_cls = rpn_cls_layer(top_conv)
 # RPN BBOX
 rpn_bbox_pred = rpn_bbox_layer(top_conv)
+
 #fast RCNN
 
-#fast_rcnn(top_conv ,rois , im_dims , eval_mode=False , num_classes=10 , phase_train = phase_train)
 
 
 # CLS LOSS
@@ -120,6 +119,9 @@ for i in range(2, max_iter):
         print 'ROI BBOX 에서 ANCHOR같은 indices 을 뽑은것 ',roi_blobs_ori[indices]
         print 'ROI CLS 에서 ANCHOR같은 indices 을 뽑은것',roi_scores_ori[indices]
 
+
+
+
         print 'RPN CLS LOSS : \t', cls_cost
         print 'RPN BBOX LOSS \t', bbox_cost
         savepath_anchor = './result_anchor/{}.png'.format(i)
@@ -128,6 +130,7 @@ for i in range(2, max_iter):
         target_inv_blobs=target_inv_blobs.astype(np.int)
         #draw_rectangles(src_img, roi_blobs[:,1:], roi_scores, target_inv_blobs , savepath_roi ,color='r')
         pos_indices=np.where([roi_scores_ori>0.5])[1]
+
         # NMS
         dets=np.hstack([roi_blobs_ori[pos_indices] ,roi_scores_ori.reshape([-1,1])[pos_indices]] )
         keep = non_maximum_supression(dets , 0.1)
