@@ -127,12 +127,18 @@ for i in range(2, max_iter):
         src_img=np.squeeze(src_img)
         target_inv_blobs=target_inv_blobs.astype(np.int)
         #draw_rectangles(src_img, roi_blobs[:,1:], roi_scores, target_inv_blobs , savepath_roi ,color='r')
+        """
+        # 겹치는 영역하고 , NMS 을 적용하지 않은 ROI 
         pos_indices=np.where([roi_scores_ori>0.5])[1]
         # NMS
         dets=np.hstack([roi_blobs_ori[pos_indices] ,roi_scores_ori.reshape([-1,1])[pos_indices]] )
         keep = non_maximum_supression(dets , 0.1)
         draw_rectangles(src_img, roi_blobs_ori[:, :], roi_scores_ori, target_inv_blobs, roi_blobs_ori[pos_indices][keep],
                         savepath_roi, color='r')
+
+        """
+        pos_indices = np.where([roi_scores > 0.5])[1]
+        draw_rectangles(src_img, roi_blobs[:, :], roi_scores, target_inv_blobs,None,savepath_roi, color='r')
 
         # Non Maximun Supress
 
