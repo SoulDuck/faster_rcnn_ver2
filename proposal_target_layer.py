@@ -35,6 +35,7 @@ def _proposal_target_layer_py(rpn_rois, gt_boxes, _num_classes):
     Assign object detection proposals to ground-truth targets. Produces proposal
     classification labels and bounding-box regression targets.
     """
+
     # rpn_rois = blobs
     # Proposal ROIs (0, x1, y1, x2, y2) coming from RPN
     # (i.e., rpn.proposal_layer.ProposalLayer), or any other source
@@ -60,6 +61,7 @@ def _proposal_target_layer_py(rpn_rois, gt_boxes, _num_classes):
     bbox_targets = bbox_targets.reshape(-1, _num_classes * 4) # 코드가 겹치는데 왜 있는지 모르겠다.
     bbox_inside_weights = bbox_inside_weights.reshape(-1, _num_classes * 4)
     bbox_outside_weights = np.array(bbox_inside_weights > 0).astype(np.float32)
+
     return np.float32(rois), labels, bbox_targets, bbox_inside_weights, bbox_outside_weights
 
 def _get_bbox_regression_labels(bbox_target_data, num_classes):
@@ -145,6 +147,8 @@ def _sample_rois(all_rois, gt_boxes, fg_rois_per_image, rois_per_image, num_clas
     # Clamp labels for the background RoIs to 0
     labels[fg_rois_per_this_image:] = 0
     rois = all_rois[keep_inds]
+
     bbox_target_data = _compute_targets(rois[:, 1:5], gt_boxes[gt_assignment[keep_inds], :4], labels)
     bbox_targets, bbox_inside_weights = _get_bbox_regression_labels(bbox_target_data, num_classes)
+
     return labels, rois, bbox_targets, bbox_inside_weights

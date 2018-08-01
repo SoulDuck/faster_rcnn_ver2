@@ -6,11 +6,11 @@ from anchor_target_layer import anchor_target
 from convnet import define_placeholder , simple_convnet , rpn_cls_layer , rpn_bbox_layer , sess_start , optimizer ,rpn_cls_loss , rpn_bbox_loss ,bbox_loss
 from proposal_layer import inv_transform_layer
 from proposal_target_layer import proposal_target_layer
-
-
+from fast_rcnn import fast_rcnn , fast_rcnn_bbox_loss , fast_rcnn_cls_loss
 import math
 import roi
 import sys
+
 rpn_labels_op = tf.placeholder(dtype =tf.int32 , shape=[1,1,None,None])
 rpn_bbox_targets_op = tf.placeholder(dtype =tf.float32 , shape=[1,36,None,None])
 rpn_bbox_inside_weights_op = tf.placeholder(dtype =tf.float32 , shape=[1,36,None,None])
@@ -20,16 +20,17 @@ bbox_targets_op = tf.placeholder(dtype =tf.float32 , shape=[None,4])
 bbox_inside_weights_op = tf.placeholder(dtype =tf.float32 , shape=[None,4])
 bbox_outside_weights_op = tf.placeholder(dtype =tf.float32 , shape=[None,4])
 x_, im_dims, gt_boxes, phase_train = define_placeholder()
-n_classes = 10
+n_classes = 10+1
 top_conv, _feat_stride = simple_convnet(x_)
 # RPN CLS
 rpn_cls = rpn_cls_layer(top_conv)
 # RPN BBOX
 rpn_bbox_pred = rpn_bbox_layer(top_conv)
+# FAST RCNN
+
+
 #fast RCNN
-
 #fast_rcnn(top_conv ,rois , im_dims , eval_mode=False , num_classes=10 , phase_train = phase_train)
-
 
 # CLS LOSS
 # A_op : rpn cls pred
@@ -55,11 +56,14 @@ inv_blobs_op  , target_inv_blobs_op = inv_transform_layer(rpn_bbox_pred ,  cfg_k
 roi_blobs_op, roi_scores_op , roi_blobs_ori_op ,roi_scores_ori_op  , roi_softmax_op = \
     roi.roi_proposal(rpn_cls , rpn_bbox_pred , im_dims , _feat_stride , anchor_scales ,is_training=True)
 
-ptl_rois_op, ptl_labels_op, plt_bbox_targets_op, ptl_bbox_inside_weights_op, ptl_bbox_outside_weights_op = \
+ptl_rois_op, ptl_labels_op, ptl_bbox_targets_op, ptl_bbox_inside_weights_op, ptl_bbox_outside_weights_op = \
     proposal_target_layer(roi_blobs_op , gt_boxes , _num_classes= n_classes ) # ptl = Proposal Target Layer
 
+fast_rcnn_cls_logits , fast_rcnn_bbox_logits = \
+    fast_rcnn(top_conv , ptl_rois_op , im_dims , eval_mode=False , num_classes=n_classes , phase_train = phase_train)
 
-
+fr_cls_loss_op = fast_rcnn_cls_loss(fast_rcnn_cls_logits , ptl_labels_op)
+fr_bbox_loss_op = fast_rcnn_bbox_loss(fast_rcnn_bbox_logits ,ptl_bbox_targets_op , ptl_bbox_inside_weights_op , ptl_bbox_outside_weights_op )
 
 cost_op = rpn_cls_loss_op + rpn_bbox_loss_op
 train_cls_op = optimizer(rpn_cls_loss_op , lr=0.01)
@@ -94,13 +98,13 @@ for i in range(2, max_iter):
     roi_blobs_ori, roi_scores_ori ,roi_softmax= sess.run(fetches=[roi_blobs_ori_op , roi_scores_ori_op  ,roi_softmax_op], feed_dict=feed_dict)
 
     ptl_rois, ptl_labels, plt_bbox_targets, ptl_bbox_inside_weights, ptl_bbox_outside_weights = sess.run(
-        fetches=[ptl_rois_op, ptl_labels_op, plt_bbox_targets_op, ptl_bbox_inside_weights_op,
+        fetches=[ptl_rois_op, ptl_labels_op, ptl_bbox_targets_op, ptl_bbox_inside_weights_op,
                  ptl_bbox_outside_weights_op], feed_dict=feed_dict)
 
+    fr_cls_loss ,fr_bbox_loss = sess.run(fetches=[fr_cls_loss_op ,fr_bbox_loss_op] , feed_dict=feed_dict)
 
     _ = sess.run(fetches=[train_op], feed_dict=feed_dict)
     pos_blobs=roi_blobs[np.where([roi_scores > 0.5])[1]]
-
 
     if i % 1000 ==0:
         print 'POS BBOX \t', pos_blobs
@@ -131,7 +135,6 @@ for i in range(2, max_iter):
         roi_softmax = roi_softmax.transpose([0,2,3,1])
         roi_softmax = roi_softmax.reshape([-1, 2])
 
-
         print 'POS rpn_cls_value PROB ',rpn_cls_value[indices]
         print 'POS SOFTMAX PROB , {}'.format(roi_softmax[indices])
         print 'ROI BBOX 에서 ANCHOR같은 indices 을 뽑은것 ',roi_blobs_ori[indices]
@@ -156,7 +159,6 @@ for i in range(2, max_iter):
         """
         pos_indices = np.where([roi_scores > 0.5])[1]
         draw_rectangles(src_img, roi_blobs[:, :], roi_scores, target_inv_blobs,None,savepath_roi, color='r')
-
         # Non Maximun Supress
 
 

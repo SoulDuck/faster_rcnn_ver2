@@ -40,7 +40,6 @@ def anchor_target(rpn_cls_score, gt_boxes, im_dims, _feat_stride, anchor_scales)
     # measure GT overlap
     """
     im_dims = im_dims[0]
-
     # _anchors shape : ( 9, 4 ) anchor coordinate type : x1,y1,x2,y2
     _anchors = generate_anchor.generate_anchors(scales=np.array(anchor_scales))
     _num_anchors = _anchors.shape[0]
@@ -58,7 +57,6 @@ def anchor_target(rpn_cls_score, gt_boxes, im_dims, _feat_stride, anchor_scales)
     shift_x, shift_y = np.meshgrid(shift_x, shift_y)
     shifts = np.vstack((shift_x.ravel(), shift_y.ravel(),
                         shift_x.ravel(), shift_y.ravel())).transpose() # 4,88 을 88,4 로 바꾼다
-
     A = _num_anchors # 9
     K = shifts.shape[0] # 88
     all_anchors=np.array([])
@@ -77,7 +75,6 @@ def anchor_target(rpn_cls_score, gt_boxes, im_dims, _feat_stride, anchor_scales)
         (all_anchors[:, 1] >= -_allowed_border) &
         (all_anchors[:, 2] < im_dims[1] + _allowed_border) &  # <-- width
         (all_anchors[:, 3] < im_dims[0] + _allowed_border))[0] # <-- height
-
 
     # 필요 있는 anchor 들만 남기고 나머지 제거
     anchors = all_anchors[inds_inside]
@@ -173,16 +170,13 @@ def anchor_target(rpn_cls_score, gt_boxes, im_dims, _feat_stride, anchor_scales)
     # try to predict at each anchor
     # TODO: This "weights" business might be deprecated. Requires investigation
     """
-
-
     # 여기서부터는
     #bbox_targets = np.zeros((len(inds_inside), 4), dtype=np.float32) 이게 왜 필요하지
     #Regression 을 할수 있게 변형한다
-
     # inside index 에 해당하는 gt boxes 들을 변환 시킨다.
-    bbox_targets = _compute_targets(anchors, gt_boxes[argmax_overlaps, :]) #  bbox_targets = dx , dy , dw , dh
+    bbox_targets = _compute_targets(anchors, gt_boxes[argmax_overlaps, :])
 
-
+    # bbox_targets = dx , dy , dw , dh
     # 나중에 사용할 bbox inside weight 와 outside weight 을 만든다
     bbox_inside_weights = np.zeros((len(inds_inside), 4), dtype=np.float32)
     bbox_inside_weights[labels==1, :] = np.array(RPN_BBOX_INSIDE_WEIGHTS) #(1.0, 1.0, 1.0, 1.0)

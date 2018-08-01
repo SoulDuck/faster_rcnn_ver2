@@ -172,6 +172,7 @@ def rpn_bbox_loss(rpn_bbox_pred, rpn_bbox_targets, rpn_inside_weights, rpn_outsi
 
 
 
+
 def bbox_loss(rpn_bbox_pred, bbox_targets, inside_weights, outside_weights , rpn_labels):
     RPN_BBOX_LAMBDA = 10.0
     with tf.variable_scope('rpn_bbox_loss'):
