@@ -4,8 +4,10 @@ import numpy as np
 from utils import next_img_gtboxes , draw_rectangles , non_maximum_supression
 from anchor_target_layer import anchor_target
 from convnet import define_placeholder , simple_convnet , rpn_cls_layer , rpn_bbox_layer , sess_start , optimizer ,rpn_cls_loss , rpn_bbox_loss ,bbox_loss
-from proposal_layer import inv_transform_layer , proposal_layer
-from fast_rcnn import fast_rcnn
+from proposal_layer import inv_transform_layer
+from proposal_target_layer import proposal_target_layer
+
+
 import math
 import roi
 import sys
@@ -18,6 +20,7 @@ bbox_targets_op = tf.placeholder(dtype =tf.float32 , shape=[None,4])
 bbox_inside_weights_op = tf.placeholder(dtype =tf.float32 , shape=[None,4])
 bbox_outside_weights_op = tf.placeholder(dtype =tf.float32 , shape=[None,4])
 x_, im_dims, gt_boxes, phase_train = define_placeholder()
+n_classes = 10
 top_conv, _feat_stride = simple_convnet(x_)
 # RPN CLS
 rpn_cls = rpn_cls_layer(top_conv)
@@ -52,6 +55,13 @@ inv_blobs_op  , target_inv_blobs_op = inv_transform_layer(rpn_bbox_pred ,  cfg_k
 roi_blobs_op, roi_scores_op , roi_blobs_ori_op ,roi_scores_ori_op  , roi_softmax_op = \
     roi.roi_proposal(rpn_cls , rpn_bbox_pred , im_dims , _feat_stride , anchor_scales ,is_training=True)
 
+ptl_rois_op, ptl_labels_op, plt_bbox_targets_op, ptl_bbox_inside_weights_op, ptl_bbox_outside_weights_op = \
+    proposal_target_layer(roi_blobs_op , gt_boxes , _num_classes= n_classes ) # ptl = Proposal Target Layer
+
+
+
+
+
 cost_op = rpn_cls_loss_op + rpn_bbox_loss_op
 train_cls_op = optimizer(rpn_cls_loss_op , lr=0.01)
 train_bbox_op = optimizer(rpn_bbox_loss_op , lr = 0.001)
@@ -83,8 +93,16 @@ for i in range(2, max_iter):
                  roi_blobs_op, roi_scores_op, target_inv_blobs_op], feed_dict=feed_dict)
 
     roi_blobs_ori, roi_scores_ori ,roi_softmax= sess.run(fetches=[roi_blobs_ori_op , roi_scores_ori_op  ,roi_softmax_op], feed_dict=feed_dict)
+
+    ptl_rois, ptl_labels, plt_bbox_targets, ptl_bbox_inside_weights, ptl_bbox_outside_weights = sess.run(
+        fetches=[ptl_rois_op, ptl_labels_op, plt_bbox_targets_op, ptl_bbox_inside_weights_op,
+                 ptl_bbox_outside_weights_op], feed_dict=feed_dict)
+
+
     _ = sess.run(fetches=[train_op], feed_dict=feed_dict)
     pos_blobs=roi_blobs[np.where([roi_scores > 0.5])[1]]
+
+
     if i % 1000 ==0:
         print 'POS BBOX \t', pos_blobs
         print 'ROI SCORE \t', np.shape(roi_scores)
