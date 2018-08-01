@@ -61,7 +61,6 @@ ptl_rois_op, ptl_labels_op, plt_bbox_targets_op, ptl_bbox_inside_weights_op, ptl
 
 
 
-
 cost_op = rpn_cls_loss_op + rpn_bbox_loss_op
 train_cls_op = optimizer(rpn_cls_loss_op , lr=0.01)
 train_bbox_op = optimizer(rpn_bbox_loss_op , lr = 0.001)
