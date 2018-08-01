@@ -8,6 +8,11 @@ from proposal_layer import inv_transform_layer , proposal_layer
 import math
 import roi
 import sys
+
+
+## Read Me ##
+# Fast RCNN 을 적용하기 전
+#############
 rpn_labels_op = tf.placeholder(dtype =tf.int32 , shape=[1,1,None,None])
 rpn_bbox_targets_op = tf.placeholder(dtype =tf.float32 , shape=[1,36,None,None])
 rpn_bbox_inside_weights_op = tf.placeholder(dtype =tf.float32 , shape=[1,36,None,None])
@@ -113,14 +118,10 @@ for i in range(2, max_iter):
         roi_softmax = roi_softmax.transpose([0,2,3,1])
         roi_softmax = roi_softmax.reshape([-1, 2])
 
-
         print 'POS rpn_cls_value PROB ',rpn_cls_value[indices]
         print 'POS SOFTMAX PROB , {}'.format(roi_softmax[indices])
         print 'ROI BBOX 에서 ANCHOR같은 indices 을 뽑은것 ',roi_blobs_ori[indices]
         print 'ROI CLS 에서 ANCHOR같은 indices 을 뽑은것',roi_scores_ori[indices]
-
-
-
 
         print 'RPN CLS LOSS : \t', cls_cost
         print 'RPN BBOX LOSS \t', bbox_cost
