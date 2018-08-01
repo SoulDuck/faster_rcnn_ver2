@@ -142,6 +142,10 @@ for i in range(2, max_iter):
 
         print 'RPN CLS LOSS : \t', cls_cost
         print 'RPN BBOX LOSS \t', bbox_cost
+
+        print 'FAST RCNN CLS LOSS : \t', fr_cls_loss
+        print 'FAST RCNN BBOX LOSS : \t', fr_bbox_loss
+
         savepath_anchor = './result_anchor/{}.png'.format(i)
         savepath_roi = './result_roi/{}.png'.format(i)
         src_img=np.squeeze(src_img)
@@ -160,9 +164,6 @@ for i in range(2, max_iter):
         pos_indices = np.where([roi_scores > 0.5])[1]
         draw_rectangles(src_img, roi_blobs[:, :], roi_scores, target_inv_blobs,None,savepath_roi, color='r')
         # Non Maximun Supress
-
-
-
     sys.stdout.write('\r Progress {} {}'.format(i,max_iter))
     sys.stdout.flush()
 
