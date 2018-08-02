@@ -65,7 +65,9 @@ def fast_rcnn(top_conv , rois , im_dims , eval_mode ,num_classes , phase_train):
         with tf.variable_scope('bbox'):
             fast_rcnn_bbox_logits = affine('bbox_logits', layer, num_classes * 4, activation=None)
 
+
     return fast_rcnn_cls_logits , fast_rcnn_bbox_logits
+
 
 
 def fast_rcnn_cls_loss(fast_rcnn_cls_score, labels):

@@ -62,13 +62,18 @@ ptl_rois_op, ptl_labels_op, ptl_bbox_targets_op, ptl_bbox_inside_weights_op, ptl
 fast_rcnn_cls_logits , fast_rcnn_bbox_logits = \
     fast_rcnn(top_conv , ptl_rois_op , im_dims , eval_mode=False , num_classes=n_classes , phase_train = phase_train)
 
+# FAST RCNN COST
 fr_cls_loss_op = fast_rcnn_cls_loss(fast_rcnn_cls_logits , ptl_labels_op)
 fr_bbox_loss_op = fast_rcnn_bbox_loss(fast_rcnn_bbox_logits ,ptl_bbox_targets_op , ptl_bbox_inside_weights_op , ptl_bbox_outside_weights_op )
+fr_cost_op = fr_cls_loss_op + fr_bbox_loss_op
+# Inverse target fast rcnn bbox
 
-cost_op = rpn_cls_loss_op + rpn_bbox_loss_op
+# RPN COST
+rpn_cost_op = rpn_cls_loss_op + rpn_bbox_loss_op
 train_cls_op = optimizer(rpn_cls_loss_op , lr=0.01)
 train_bbox_op = optimizer(rpn_bbox_loss_op , lr = 0.001)
-train_op = optimizer(cost_op , lr=0.001)
+cost_op = rpn_cost_op + fr_cost_op
+train_op = optimizer(cost_op  , lr=0.001)
 sess=sess_start()
 max_iter = 55000 * 100
 
@@ -106,7 +111,7 @@ for i in range(2, max_iter):
     _ = sess.run(fetches=[train_op], feed_dict=feed_dict)
     pos_blobs=roi_blobs[np.where([roi_scores > 0.5])[1]]
 
-    if i % 1000 ==0:
+    if i % 10 ==0:
         print 'POS BBOX \t', pos_blobs
         print 'ROI SCORE \t', np.shape(roi_scores)
         print 'ROI BLOBS \t', np.shape(roi_blobs)
@@ -142,7 +147,6 @@ for i in range(2, max_iter):
 
         print 'RPN CLS LOSS : \t', cls_cost
         print 'RPN BBOX LOSS \t', bbox_cost
-
         print 'FAST RCNN CLS LOSS : \t', fr_cls_loss
         print 'FAST RCNN BBOX LOSS : \t', fr_bbox_loss
 
@@ -159,10 +163,15 @@ for i in range(2, max_iter):
         keep = non_maximum_supression(dets , 0.1)
         draw_rectangles(src_img, roi_blobs_ori[:, :], roi_scores_ori, target_inv_blobs, roi_blobs_ori[pos_indices][keep],
                         savepath_roi, color='r')
-
         """
+
         pos_indices = np.where([roi_scores > 0.5])[1]
-        draw_rectangles(src_img, roi_blobs[:, :], roi_scores, target_inv_blobs,None,savepath_roi, color='r')
+        print np.shape(ptl_rois)
+        print src_gt_boxes
+        print ptl_rois
+        print ptl_labels
+
+        draw_rectangles(src_img, roi_blobs[:, :], roi_scores, target_inv_blobs,ptl_rois,savepath_roi, color='r')
         # Non Maximun Supress
     sys.stdout.write('\r Progress {} {}'.format(i,max_iter))
     sys.stdout.flush()
