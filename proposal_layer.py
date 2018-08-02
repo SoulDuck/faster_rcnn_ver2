@@ -220,7 +220,7 @@ def _inv_transform_layer_fastrcnn_py(rois , fast_rcnn_bbox):
 
 
 def inv_transform_layer_fastrcnn(rois , fast_rcnn_bbox):
-    proposals = tf.py_func( _inv_transform_layer_fastrcnn_py , [rois , fast_rcnn_bbox] , [tf.float32])
+    proposals = tf.py_func(_inv_transform_layer_fastrcnn_py , [ rois , fast_rcnn_bbox ] , [tf.float32])
     proposals = tf.reshape(proposals, shape=[-1, 4])
     return proposals
 
