@@ -171,7 +171,7 @@ for i in range(2, max_iter):
         print ptl_rois
         print ptl_labels
 
-        draw_rectangles(src_img, roi_blobs[:, :], roi_scores, target_inv_blobs,ptl_rois,savepath_roi, color='r')
+        draw_rectangles(src_img, roi_blobs[:, :], roi_scores, target_inv_blobs,None,savepath_roi, color='r')
         # Non Maximun Supress
     sys.stdout.write('\r Progress {} {}'.format(i,max_iter))
     sys.stdout.flush()
