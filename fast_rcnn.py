@@ -3,6 +3,7 @@ import tensorflow as tf
 from cnn import affine ,dropout
 import tensorflow as tf
 
+
 def smoothL1(x, sigma):
     '''
     Tensorflow implementation of smooth L1 loss defined in Fast RCNN:
@@ -65,7 +66,6 @@ def fast_rcnn(top_conv , rois , im_dims , eval_mode ,num_classes , phase_train):
         with tf.variable_scope('bbox'):
             fast_rcnn_bbox_logits = affine('bbox_logits', layer, num_classes * 4, activation=None)
 
-
     return fast_rcnn_cls_logits , fast_rcnn_bbox_logits
 
 
@@ -110,7 +110,5 @@ def fast_rcnn_bbox_loss(fast_rcnn_bbox_pred, bbox_targets, roi_inside_weights, r
         roi_bbox_reg = FRCNN_BBOX_LAMBDA * roi_bbox_reg
 
     return roi_bbox_reg
-
-
 
 

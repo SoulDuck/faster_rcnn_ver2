@@ -1,10 +1,10 @@
 #-*- coding:utf-8 -*-
 import tensorflow as tf
 import numpy as np
-from utils import next_img_gtboxes , draw_rectangles , non_maximum_supression
+from utils import next_img_gtboxes , draw_rectangles , non_maximum_supression , draw_rectangles_fastrcnn
 from anchor_target_layer import anchor_target
 from convnet import define_placeholder , simple_convnet , rpn_cls_layer , rpn_bbox_layer , sess_start , optimizer ,rpn_cls_loss , rpn_bbox_loss ,bbox_loss
-from proposal_layer import inv_transform_layer
+from proposal_layer import inv_transform_layer , inv_transform_layer_fastrcnn
 from proposal_target_layer import proposal_target_layer
 from fast_rcnn import fast_rcnn , fast_rcnn_bbox_loss , fast_rcnn_cls_loss
 import math
@@ -26,11 +26,7 @@ top_conv, _feat_stride = simple_convnet(x_)
 rpn_cls = rpn_cls_layer(top_conv)
 # RPN BBOX
 rpn_bbox_pred = rpn_bbox_layer(top_conv)
-# FAST RCNN
-
-
-#fast RCNN
-#fast_rcnn(top_conv ,rois , im_dims , eval_mode=False , num_classes=10 , phase_train = phase_train)
+# Fast_rcnn(top_conv ,rois , im_dims , eval_mode=False , num_classes=10 , phase_train = phase_train)
 
 # CLS LOSS
 # A_op : rpn cls pred
@@ -52,20 +48,21 @@ anchor_scales = [3, 4, 5]
 # INV target_inv_blobs_op OP = return to the original Coordinate (indices )
 inv_blobs_op  , target_inv_blobs_op = inv_transform_layer(rpn_bbox_pred ,  cfg_key = phase_train , \
                                         _feat_stride = _feat_stride , anchor_scales =anchor_scales , indices = indice_op)
+
 # Region of Interested
 roi_blobs_op, roi_scores_op , roi_blobs_ori_op ,roi_scores_ori_op  , roi_softmax_op = \
     roi.roi_proposal(rpn_cls , rpn_bbox_pred , im_dims , _feat_stride , anchor_scales ,is_training=True)
-
 ptl_rois_op, ptl_labels_op, ptl_bbox_targets_op, ptl_bbox_inside_weights_op, ptl_bbox_outside_weights_op = \
     proposal_target_layer(roi_blobs_op , gt_boxes , _num_classes= n_classes ) # ptl = Proposal Target Layer
-
 fast_rcnn_cls_logits , fast_rcnn_bbox_logits = \
     fast_rcnn(top_conv , ptl_rois_op , im_dims , eval_mode=False , num_classes=n_classes , phase_train = phase_train)
 
+fast_rcnn_blobs_op = inv_transform_layer_fastrcnn(ptl_rois_op , fast_rcnn_bbox_logits)
 # FAST RCNN COST
 fr_cls_loss_op = fast_rcnn_cls_loss(fast_rcnn_cls_logits , ptl_labels_op)
 fr_bbox_loss_op = fast_rcnn_bbox_loss(fast_rcnn_bbox_logits ,ptl_bbox_targets_op , ptl_bbox_inside_weights_op , ptl_bbox_outside_weights_op )
 fr_cost_op = fr_cls_loss_op + fr_bbox_loss_op
+
 # Inverse target fast rcnn bbox
 
 # RPN COST
@@ -93,25 +90,26 @@ for i in range(2, max_iter):
                  bbox_targets_op: bbox_targets ,
                  bbox_inside_weights_op: bbox_inside_weights ,
                  bbox_outside_weights_op : bbox_outside_weights,
-                 indice_op:indices
-                 }
+                 indice_op:indices}
 
     rpn_labels,cls_cost, bbox_cost  ,rpn_cls_value, A, B,diff, C, D ,E ,F , roi_blobs ,roi_scores  , target_inv_blobs = sess.run(
         fetches=[rpn_labels_op,rpn_cls_loss_op, rpn_bbox_loss_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op, E_op, F_op,
                  roi_blobs_op, roi_scores_op, target_inv_blobs_op], feed_dict=feed_dict)
-
     roi_blobs_ori, roi_scores_ori ,roi_softmax= sess.run(fetches=[roi_blobs_ori_op , roi_scores_ori_op  ,roi_softmax_op], feed_dict=feed_dict)
-
     ptl_rois, ptl_labels, plt_bbox_targets, ptl_bbox_inside_weights, ptl_bbox_outside_weights = sess.run(
         fetches=[ptl_rois_op, ptl_labels_op, ptl_bbox_targets_op, ptl_bbox_inside_weights_op,
                  ptl_bbox_outside_weights_op], feed_dict=feed_dict)
-
-    fr_cls_loss ,fr_bbox_loss = sess.run(fetches=[fr_cls_loss_op ,fr_bbox_loss_op] , feed_dict=feed_dict)
+    fr_cls_loss , fr_bbox_loss = sess.run(fetches=[fr_cls_loss_op ,fr_bbox_loss_op] , feed_dict=feed_dict)
+    fast_rcnn_blobs = sess.run(fetches=[fast_rcnn_blobs_op], feed_dict=feed_dict)
 
     _ = sess.run(fetches=[train_op], feed_dict=feed_dict)
     pos_blobs=roi_blobs[np.where([roi_scores > 0.5])[1]]
 
-    if i % 1000 ==0:
+
+
+
+
+    if i % 10 ==0:
         print 'POS BBOX \t', pos_blobs
         print 'ROI SCORE \t', np.shape(roi_scores)
         print 'ROI BLOBS \t', np.shape(roi_blobs)
@@ -164,11 +162,10 @@ for i in range(2, max_iter):
         draw_rectangles(src_img, roi_blobs_ori[:, :], roi_scores_ori, target_inv_blobs, roi_blobs_ori[pos_indices][keep],
                         savepath_roi, color='r')
         """
-
         pos_indices = np.where([roi_scores > 0.5])[1]
         draw_rectangles(src_img, roi_blobs[:, :], roi_scores, target_inv_blobs,None,savepath_roi, color='r')
+        draw_rectangles_fastrcnn(src_img ,fast_rcnn_blobs, ptl_labels , savepath='./result_fastrcnn_roi/{}.png'.format(i) )
+
         # Non Maximun Supress
     sys.stdout.write('\r Progress {} {}'.format(i,max_iter))
     sys.stdout.flush()
-
-

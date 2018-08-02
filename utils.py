@@ -54,6 +54,46 @@ def non_maximum_supression( dets, thresh):
         order = order[inds + 1]
     return keep
 
+def draw_rectangles_fastrcnn(img , bboxes , true_classes  , savepath):
+    ax = plt.axes()
+
+    bboxes = np.asarray(bboxes)
+    bboxes = np.squeeze(bboxes)
+    print np.shape(bboxes)
+    plt.imshow(img)
+    h,w = np.shape(img)
+    pos_indices=np.where([true_classes > 0])[1]
+    neg_indices = np.where([true_classes == 0])[1]
+    print pos_indices
+    pos_bboxes = bboxes[pos_indices]
+    neg_bboxes = bboxes[neg_indices]
+
+
+    for box in pos_bboxes :
+
+        x1, y1, x2, y2= box  # x1 ,y1 ,x2 ,y2
+        if x1 >0 and y1 >0 and x2 > 0 and y2 > 0 and x2 > x1 and y2 > y1 and w > x2 and y2 < h :
+            rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor='b', facecolor='none')
+            ax.add_patch(rect)
+        else:
+            continue
+
+    for box in neg_bboxes :
+        x1, y1, x2, y2= box  # x1 ,y1 ,x2 ,y2
+        if x1 >0 and y1 >0 and x2 > 0 and y2 > 0 and x2 > x1 and y2 > y1 and w > x2 and y2 < h :
+            rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor='r', facecolor='none')
+            ax.add_patch(rect)
+        else:
+            continue
+
+    plt.savefig(savepath)
+    plt.close()
+
+
+
+
+
+
 def draw_rectangles(img ,bboxes ,scores , anchors, roi_nms_bbox , savepath , color):
     ax = plt.axes()
     plt.imshow(img)
@@ -64,8 +104,6 @@ def draw_rectangles(img ,bboxes ,scores , anchors, roi_nms_bbox , savepath , col
     pos_bboxes = pos_bboxes[:,1:]
     neg_bboxes = bboxes[neg_bboxes_indices]
     neg_bboxes = neg_bboxes[:,1:]
-
-
 
     # DRAW POS BBOX
     for box in pos_bboxes:
@@ -123,6 +161,8 @@ def draw_rectangles(img ,bboxes ,scores , anchors, roi_nms_bbox , savepath , col
                 continue
         plt.savefig(savepath.replace('roi', 'nms_roi'))
         plt.close()
+
+
 
 if '__main__' == __name__:
     img , gt_boxes =next_img_gtboxes(image_idx=1)

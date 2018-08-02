@@ -11,7 +11,7 @@ from nms_wrapper import nms , non_maximum_supression
 
 
 def proposal_layer(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat_stride, anchor_scales):
-    blobs , scores  ,blobs_ori , scores_ori=tf.py_func(_proposal_layer_py,
+    blobs , scores  ,blobs_ori , scores_ori = tf.py_func( _proposal_layer_py,
                                  [rpn_bbox_cls_prob, rpn_bbox_pred, im_dims[0], cfg_key, _feat_stride, anchor_scales],
                                  [tf.float32 , tf.float32 ,tf.float32 , tf.float32 ])
 
@@ -163,6 +163,7 @@ def _inv_transform_layer_py(rpn_bbox_pred,  is_training, _feat_stride, anchor_sc
         post_nms_topN = cfg.TRAIN.RPN_POST_NMS_TOP_N # 2000
         nms_thresh = cfg.TRAIN.RPN_NMS_THRESH #0.7
         min_size = cfg.TRAIN.RPN_MIN_SIZE # 16
+
     else:  # cfg_key == 'TEST':
         pre_nms_topN = cfg.TEST.RPN_PRE_NMS_TOP_N
         post_nms_topN = cfg.TEST.RPN_POST_NMS_TOP_N
@@ -213,3 +214,24 @@ def inv_transform_layer(rpn_bbox_pred, cfg_key, _feat_stride, anchor_scales , in
 
 
 
+def _inv_transform_layer_fastrcnn_py(rois , fast_rcnn_bbox):
+    proposals = bbox_transform_inv(rois , fast_rcnn_bbox)
+    return proposals
+
+
+def inv_transform_layer_fastrcnn(rois , fast_rcnn_bbox):
+    proposals = tf.py_func( _inv_transform_layer_fastrcnn_py , [rois , fast_rcnn_bbox] , [tf.float32])
+    proposals = tf.reshape(proposals, shape=[-1, 4])
+    return proposals
+
+
+"""
+
+#boxes, deltas
+def _inv_tranform_layer_fr(rpn_bbox_pred, deltas):
+    
+
+def inv_transform_layer_fr(rpn_bbox_pred , ptl_layer):
+    tf.py_func(_inv_tranform_layer_fr ,)
+
+"""
