@@ -166,11 +166,6 @@ for i in range(2, max_iter):
         """
 
         pos_indices = np.where([roi_scores > 0.5])[1]
-        print np.shape(ptl_rois)
-        print src_gt_boxes
-        print ptl_rois
-        print ptl_labels
-
         draw_rectangles(src_img, roi_blobs[:, :], roi_scores, target_inv_blobs,None,savepath_roi, color='r')
         # Non Maximun Supress
     sys.stdout.write('\r Progress {} {}'.format(i,max_iter))
