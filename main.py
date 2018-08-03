@@ -100,12 +100,12 @@ for i in range(2, max_iter):
         fetches=[ptl_rois_op, ptl_labels_op, ptl_bbox_targets_op, ptl_bbox_inside_weights_op,
                  ptl_bbox_outside_weights_op], feed_dict=feed_dict)
     fr_cls_loss , fr_bbox_loss = sess.run(fetches=[fr_cls_loss_op ,fr_bbox_loss_op] , feed_dict=feed_dict)
-    fast_rcnn_blobs = sess.run(fetches=[fast_rcnn_blobs_op], feed_dict=feed_dict)
+    fast_rcnn_cls, fast_rcnn_blobs = sess.run(fetches=[ fast_rcnn_cls_logits, fast_rcnn_blobs_op], feed_dict=feed_dict)
 
     _ = sess.run(fetches=[train_op], feed_dict=feed_dict)
     pos_blobs=roi_blobs[np.where([roi_scores > 0.5])[1]]
 
-    if i % 1000 ==0:
+    if i % 1000 == 0:
         print 'POS BBOX \t', pos_blobs
         print 'ROI SCORE \t', np.shape(roi_scores)
         print 'ROI BLOBS \t', np.shape(roi_blobs)
@@ -143,6 +143,8 @@ for i in range(2, max_iter):
         print 'RPN BBOX LOSS \t', bbox_cost
         print 'FAST RCNN CLS LOSS : \t', fr_cls_loss
         print 'FAST RCNN BBOX LOSS : \t', fr_bbox_loss
+        print 'FAST RCNN CLS PREDICTIONS : \t' , np.argmax(fast_rcnn_cls , axis =1)
+        print 'FAST RCNN CLS LABLES : \t', ptl_labels
 
         savepath_anchor = './result_anchor/{}.png'.format(i)
         savepath_roi = './result_roi/{}.png'.format(i)
@@ -159,9 +161,7 @@ for i in range(2, max_iter):
                         savepath_roi, color='r')
         """
         pos_indices = np.where([roi_scores > 0.5])[1]
-        draw_rectangles(src_img, roi_blobs[:, :], roi_scores, target_inv_blobs,None,savepath_roi, color='r')
+        draw_rectangles(src_img, roi_blobs[:, :], roi_scores, target_inv_blobs, ptl_rois[:, 1:], savepath_roi, color='r')
         draw_rectangles_fastrcnn(src_img ,fast_rcnn_blobs, ptl_labels , savepath='./result_fastrcnn_roi/{}.png'.format(i) )
-
-        # Non Maximun Supress
     sys.stdout.write('\r Progress {} {}'.format(i,max_iter))
     sys.stdout.flush()
