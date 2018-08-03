@@ -61,7 +61,7 @@ ptl_rois_op, ptl_labels_op, ptl_bbox_targets_op, ptl_bbox_inside_weights_op, ptl
 # RPN COST
 rpn_cost_op = rpn_cls_loss_op + rpn_bbox_loss_op
 cost_op = rpn_cost_op
-train_op = optimizer(cost_op, lr=0.0001)
+train_op = optimizer(cost_op, lr=0.01)
 sess = sess_start()
 max_iter = 55000 * 25
 
