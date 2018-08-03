@@ -71,16 +71,16 @@ train_bbox_op = optimizer(rpn_bbox_loss_op , lr = 0.001)
 cost_op = rpn_cost_op + fr_cost_op
 train_op = optimizer(cost_op  , lr=0.0001)
 sess=sess_start()
-max_iter = 55000 * 100
+max_iter = 55000 * 25
 
 for i in range(2, max_iter):
     src_img , src_gt_boxes = next_img_gtboxes(i)
     h,w=np.shape(src_img)
     src_im_dims = [(h,w)]
     rpn_cls_score=np.zeros([1,int(math.ceil(h/8.)),int(math.ceil(w/8.)),512])
+
     rpn_labels, rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights, bbox_targets, bbox_inside_weights, bbox_outside_weights = anchor_target(
-        rpn_cls_score=rpn_cls_score, gt_boxes=src_gt_boxes, im_dims=src_im_dims, _feat_stride=8,
-        anchor_scales=anchor_scales)
+        rpn_cls_score=rpn_cls_score, gt_boxes=src_gt_boxes, im_dims=src_im_dims, _feat_stride=_feat_stride,anchor_scales=anchor_scales)
 
     indices=np.where([np.reshape(rpn_labels,[-1])>0])[1]
     src_img=src_img.reshape([1]+list(np.shape(src_img))+[1])
@@ -104,7 +104,7 @@ for i in range(2, max_iter):
     _ = sess.run(fetches=[train_op], feed_dict=feed_dict)
     pos_blobs=roi_blobs[np.where([roi_scores > 0.5])[1]]
 
-    if i % 1000 == 0:
+    if i % 55000 == 0:
         print 'POS BBOX \t', pos_blobs
         print 'ROI SCORE \t', np.shape(roi_scores)
         print 'ROI BLOBS \t', np.shape(roi_blobs)
@@ -154,13 +154,14 @@ for i in range(2, max_iter):
         # 겹치는 영역하고 , NMS 을 적용하지 않은 ROI 
         pos_indices=np.where([roi_scores_ori>0.5])[1]
         # NMS
-        dets=np.hstack([roi_blobs_ori[pos_indices] ,roi_scores_ori.reshape([-1,1])[pos_indices]] )
-        keep = non_maximum_supression(dets , 0.1)
-        draw_rectangles(src_img, roi_blobs_ori[:, :], roi_scores_ori, target_inv_blobs, roi_blobs_ori[pos_indices][keep],
-                        savepath_roi, color='r')
+        
+        roi_blobs 에 NMS 가 적용 되어 있다
+        roi_Scores 는 NMS가 적용된 좌표에 대응하는 확률값이다
+        target_inv_blobs 는 blobs을 
         """
         pos_indices = np.where([roi_scores > 0.5])[1]
-        draw_rectangles(src_img, roi_blobs[:, :], roi_scores, target_inv_blobs, ptl_rois[:, 1:], savepath_roi, color='r')
+
+        draw_rectangles(src_img, roi_blobs[:, :], roi_scores, target_inv_blobs, None, savepath_roi, color='r')
         draw_rectangles_fastrcnn(src_img ,fast_rcnn_blobs, ptl_labels , savepath='./result_fastrcnn_roi/{}.png'.format(i) )
 
     sys.stdout.write('\r Progress {} {}'.format(i,max_iter))
