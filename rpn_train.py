@@ -102,7 +102,7 @@ for i in range(2, max_iter):
     _ = sess.run(fetches=[train_op], feed_dict=feed_dict)
     pos_blobs = roi_blobs[np.where([roi_scores > 0.5])[1]]
 
-    if i % 1000 == 0:
+    if i % 100 == 0:
         print 'POS BBOX \t', pos_blobs
         print 'ROI SCORE \t', np.shape(roi_scores)
         print 'ROI BLOBS \t', np.shape(roi_blobs)
@@ -152,8 +152,10 @@ for i in range(2, max_iter):
         roi_Scores 는 NMS가 적용된 좌표에 대응하는 확률값이다
         target_inv_blobs 는 blobs을 
         """
-        pos_indices = np.where([roi_scores > 0.5])[1]
-        draw_rectangles(src_img, roi_blobs[:, :], roi_scores, target_inv_blobs, None, savepath_roi, color='r')
+        pos_indices = np.where([roi_scores_ori > 0.5])[1]
+        print 'Positive : {}'.format(len(pos_indices))
+        print np.shape(roi_blobs_ori)
+        draw_rectangles(src_img, roi_blobs_ori[:, :], roi_scores_ori, target_inv_blobs, None, savepath_roi, color='r')
 
     sys.stdout.write('\r Progress {} {}'.format(i, max_iter))
     sys.stdout.flush()
