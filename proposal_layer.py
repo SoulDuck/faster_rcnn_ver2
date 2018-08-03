@@ -101,7 +101,9 @@ def _proposal_layer_py(rpn_bbox_cls_prob, rpn_bbox_pred, im_dims, cfg_key, _feat
     rpn_bbox_pred=rpn_bbox_pred.transpose([0,2,3,1])
     rpn_bbox_pred = rpn_bbox_pred.reshape([-1,4])
     bbox_deltas=rpn_bbox_pred
-    ## CLS TRANSPOSE
+    ## CLS TRANSPOSE ##
+
+
 
     ## BBOX TRANSPOSE Using Anchor
     proposals = bbox_transform_inv(anchors, bbox_deltas)

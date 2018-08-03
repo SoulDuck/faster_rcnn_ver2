@@ -42,16 +42,15 @@ rpn_cls_loss_op ,A_op ,B_op  = rpn_cls_loss(rpn_cls , rpn_labels_op) # rpn_label
 rpn_bbox_loss_op , diff_op , C_op , D_op ,E_op ,F_op= \
     bbox_loss(rpn_bbox_pred ,bbox_targets_op , bbox_inside_weights_op , bbox_outside_weights_op , rpn_labels_op)
 anchor_scales = [3, 4, 5]
-
 # BBOX OP
 # INV inv_blobs_op OP = return to the original Coordinate
 # INV target_inv_blobs_op OP = return to the original Coordinate (indices )
 inv_blobs_op  , target_inv_blobs_op = inv_transform_layer(rpn_bbox_pred ,  cfg_key = phase_train , \
                                         _feat_stride = _feat_stride , anchor_scales =anchor_scales , indices = indice_op)
-
 # Region of Interested
 roi_blobs_op, roi_scores_op , roi_blobs_ori_op ,roi_scores_ori_op  , roi_softmax_op = \
     roi.roi_proposal(rpn_cls , rpn_bbox_pred , im_dims , _feat_stride , anchor_scales ,is_training=True)
+# Fast rcnn 을 학습시킬 roi을 추출합니다
 ptl_rois_op, ptl_labels_op, ptl_bbox_targets_op, ptl_bbox_inside_weights_op, ptl_bbox_outside_weights_op = \
     proposal_target_layer(roi_blobs_op , gt_boxes , _num_classes= n_classes ) # ptl = Proposal Target Layer
 fast_rcnn_cls_logits , fast_rcnn_bbox_logits = \
@@ -70,7 +69,7 @@ rpn_cost_op = rpn_cls_loss_op + rpn_bbox_loss_op
 train_cls_op = optimizer(rpn_cls_loss_op , lr=0.01)
 train_bbox_op = optimizer(rpn_bbox_loss_op , lr = 0.001)
 cost_op = rpn_cost_op + fr_cost_op
-train_op = optimizer(cost_op  , lr=0.001)
+train_op = optimizer(cost_op  , lr=0.0001)
 sess=sess_start()
 max_iter = 55000 * 100
 
@@ -163,5 +162,6 @@ for i in range(2, max_iter):
         pos_indices = np.where([roi_scores > 0.5])[1]
         draw_rectangles(src_img, roi_blobs[:, :], roi_scores, target_inv_blobs, ptl_rois[:, 1:], savepath_roi, color='r')
         draw_rectangles_fastrcnn(src_img ,fast_rcnn_blobs, ptl_labels , savepath='./result_fastrcnn_roi/{}.png'.format(i) )
+
     sys.stdout.write('\r Progress {} {}'.format(i,max_iter))
     sys.stdout.flush()

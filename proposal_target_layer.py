@@ -53,6 +53,8 @@ def _proposal_target_layer_py(rpn_rois, gt_boxes, _num_classes):
     fg_rois_per_image = np.round(cfg.TRAIN.FG_FRACTION * rois_per_image).astype(np.int32)
     # Sample rois with classification labels and bounding box regression
     # targets
+    # 여기서 fast rcnn 을 학습시킬 roi을 추출합니다
+    # foreground 와 backgound roi을 고루고루 뽑기 위함입니다
     labels, rois, bbox_targets, bbox_inside_weights = _sample_rois(
         all_rois, gt_boxes, fg_rois_per_image,
         rois_per_image, _num_classes)
@@ -135,6 +137,11 @@ def _sample_rois(all_rois, gt_boxes, fg_rois_per_image, rois_per_image, num_clas
     # against there being fewer than desired)
     bg_rois_per_this_image = rois_per_image - fg_rois_per_this_image
     bg_rois_per_this_image = min(bg_rois_per_this_image, bg_inds.size)
+
+    if bg_rois_per_this_image > len(fg_inds) *3 : # bg 가 fg 보다 3배 크면 fg 의 3배만큼만 추출한다
+        bg_rois_per_this_image = len(fg_inds)* 3
+
+
     #print 'background # Imgge {} | foreground # Image {}'.format(bg_rois_per_this_image , fg_rois_per_this_image)
     # Sample background regions without replacement
 
