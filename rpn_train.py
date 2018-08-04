@@ -76,7 +76,7 @@ for i in range(2, max_iter):
     # src im dims : source image 의 원래 크기
     # _feat stride : 얼마만큼 줄였는지
     # _anchor scale : anchor scale
-    rpn_cls_score = np.zeros([1, int(math.ceil(h / _feat_stride)), int(math.ceil(w / _feat_stride)), 512])
+    rpn_cls_score = np.zeros([1, int(math.ceil(h / float(_feat_stride))), int(math.ceil(w / float(_feat_stride))), 512])
     rpn_labels, rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights, bbox_targets, bbox_inside_weights, bbox_outside_weights = \
         anchor_target(rpn_cls_score, src_gt_boxes, src_im_dims, _feat_stride, anchor_scales)
 
@@ -102,7 +102,7 @@ for i in range(2, max_iter):
     _ = sess.run(fetches=[train_op], feed_dict=feed_dict)
     pos_blobs = roi_blobs[np.where([roi_scores > 0.5])[1]]
 
-    if i % 100 == 0:
+    if i % 10 == 0:
         print 'POS BBOX \t', pos_blobs
         print 'ROI SCORE \t', np.shape(roi_scores)
         print 'ROI BLOBS \t', np.shape(roi_blobs)

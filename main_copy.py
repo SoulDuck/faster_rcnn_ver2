@@ -46,16 +46,15 @@ rpn_cls_loss_op ,A_op ,B_op  = rpn_cls_loss(rpn_cls , rpn_labels_op) # rpn_label
 rpn_bbox_loss_op , diff_op , C_op , D_op ,E_op ,F_op= \
     bbox_loss(rpn_bbox_pred ,bbox_targets_op , bbox_inside_weights_op , bbox_outside_weights_op , rpn_labels_op)
 anchor_scales = [3, 4, 5]
-
 # BBOX OP
 # INV inv_blobs_op OP = return to the original Coordinate
 # INV target_inv_blobs_op OP = return to the original Coordinate (indices )
 inv_blobs_op  , target_inv_blobs_op = inv_transform_layer(rpn_bbox_pred ,  cfg_key = phase_train , \
                                         _feat_stride = _feat_stride , anchor_scales =anchor_scales , indices = indice_op)
+
 # Region of Interested
 roi_blobs_op, roi_scores_op , roi_blobs_ori_op ,roi_scores_ori_op  , roi_softmax_op = \
     roi.roi_proposal(rpn_cls , rpn_bbox_pred , im_dims , _feat_stride , anchor_scales ,is_training=True)
-
 cost_op = rpn_cls_loss_op + rpn_bbox_loss_op
 train_cls_op = optimizer(rpn_cls_loss_op , lr=0.01)
 train_bbox_op = optimizer(rpn_bbox_loss_op , lr = 0.001)
@@ -68,6 +67,7 @@ for i in range(2, max_iter):
     h,w=np.shape(src_img)
     src_im_dims = [(h,w)]
     rpn_cls_score=np.zeros([1,int(math.ceil(h/8.)),int(math.ceil(w/8.)),512])
+
     rpn_labels, rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights, bbox_targets, bbox_inside_weights, bbox_outside_weights = anchor_target(
         rpn_cls_score=rpn_cls_score, gt_boxes=src_gt_boxes, im_dims=src_im_dims, _feat_stride=8,
         anchor_scales=anchor_scales)
@@ -89,7 +89,7 @@ for i in range(2, max_iter):
     roi_blobs_ori, roi_scores_ori ,roi_softmax= sess.run(fetches=[roi_blobs_ori_op , roi_scores_ori_op  ,roi_softmax_op], feed_dict=feed_dict)
     _ = sess.run(fetches=[train_op], feed_dict=feed_dict)
     pos_blobs=roi_blobs[np.where([roi_scores > 0.5])[1]]
-    if i % 1000 ==0:
+    if i % 10 ==0:
         print 'POS BBOX \t', pos_blobs
         print 'ROI SCORE \t', np.shape(roi_scores)
         print 'ROI BLOBS \t', np.shape(roi_blobs)
