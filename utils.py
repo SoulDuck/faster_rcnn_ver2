@@ -71,7 +71,7 @@ def draw_rectangles_fastrcnn(img , bboxes , true_classes  , savepath):
 
     for box in pos_bboxes :
 
-        x1, y1, x2, y2= box  # x1 ,y1 ,x2 ,y2
+        x1, y1, x2, y2= box[:,1:]  # x1 ,y1 ,x2 ,y2
         if x1 >0 and y1 >0 and x2 > 0 and y2 > 0 and x2 > x1 and y2 > y1 and w > x2 and y2 < h :
             rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor='b', facecolor='none')
             ax.add_patch(rect)
@@ -91,7 +91,7 @@ def draw_rectangles_fastrcnn(img , bboxes , true_classes  , savepath):
 
 
 
-def draw_rectangles_ptl(img,ptl_bbox , inv_ptl_bbox , ptl_labels , savepath):
+def draw_rectangles_ptl(img,ptl_bbox , inv_fast_bbox , ptl_labels  , inv_fast_cls, savepath):
     bg_indices = np.where([ptl_labels == 0])[-1]
     fg_indices = np.where([ptl_labels != 0])[-1]
     bg_bboxes = ptl_bbox[bg_indices]
@@ -126,9 +126,16 @@ def draw_rectangles_ptl(img,ptl_bbox , inv_ptl_bbox , ptl_labels , savepath):
 
     ax = plt.axes()
     plt.imshow(img)
-    print np.shape(inv_ptl_bbox)
-    for box in inv_ptl_bbox[:,:] :
-        x1, y1, x2, y2= box  # x1 ,y1 ,x2 ,y2
+    for i,box in enumerate(inv_fast_bbox):
+        pred=inv_fast_cls[i]
+        true= ptl_labels[i]
+        start = pred*4
+        end= (pred+1) * 4
+
+        x1, y1, x2, y2= box[start : end ]
+
+        plt.text(x1,y1,str('pred : {}'.format(pred)) , fontsize=12 ,color='red')
+        plt.text(x1+40,y1, str('true : {}'.format(true)), fontsize=12 ,color='red')
         if x1 >0 and y1 >0 and x2 > 0 and y2 > 0 and x2 > x1 and y2 > y1 and w > x2 and y2 < h :
             rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor='g', facecolor='none')
             ax.add_patch(rect)

@@ -60,7 +60,7 @@ fast_rcnn_cls_logits , fast_rcnn_bbox_logits = \
 
 
 inv_ptl_rois_op = inv_transform_layer_fastrcnn(ptl_rois_op , ptl_bbox_targets_op)
-fast_rcnn_blobs_op = inv_transform_layer_fastrcnn(ptl_rois_op , ptl_bbox_targets_op)
+fast_rcnn_blobs_op = inv_transform_layer_fastrcnn(ptl_rois_op , fast_rcnn_bbox_logits)
 # 임시로 되돌려 만들어 본다 , ptl 은 추천된 박스 영상과 동일해야 한다.
 
 
@@ -106,6 +106,8 @@ for i in range(2, max_iter):
                  ptl_bbox_outside_weights_op], feed_dict=feed_dict)
     fr_cls_loss , fr_bbox_loss = sess.run(fetches=[fr_cls_loss_op ,fr_bbox_loss_op] , feed_dict=feed_dict)
     fast_rcnn_cls, fast_rcnn_blobs = sess.run(fetches=[ fast_rcnn_cls_logits, fast_rcnn_blobs_op], feed_dict=feed_dict)
+    fast_rcnn_blobs = np.reshape(fast_rcnn_blobs , [-1 ,44])
+
     inv_ptl_rois = sess.run(fetches=[inv_ptl_rois_op], feed_dict=feed_dict)
     inv_ptl_rois = np.squeeze(inv_ptl_rois)
 
@@ -166,12 +168,11 @@ for i in range(2, max_iter):
         roi_Scores 는 NMS가 적용된 좌표에 대응하는 확률값이다
         target_inv_blobs 는 blobs 
         """
+
+
         pos_indices = np.where([roi_scores > 0.5])[1]
         #draw_rectangles(src_img, roi_blobs[:, :], roi_scores, target_inv_blobs, None, savepath_roi, color='r')
-
-        draw_rectangles_fastrcnn(src_img, fast_rcnn_blobs, ptl_labels,
-                                 savepath='./result_fastrcnn_roi/{}.png'.format(i))
-        draw_rectangles_ptl(src_img, ptl_rois, fast_rcnn_blobs, ptl_labels , savepath=savepath_roi )
+        draw_rectangles_ptl(src_img, ptl_rois, fast_rcnn_blobs, ptl_labels , np.argmax(fast_rcnn_cls ,axis=1) ,  savepath=savepath_roi )
 
 
     sys.stdout.write('\r Progress {} {}'.format(i,max_iter))
