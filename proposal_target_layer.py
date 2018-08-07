@@ -30,6 +30,9 @@ def proposal_target_layer(rpn_rois, gt_boxes, _num_classes):
     bbox_outside_weights = tf.convert_to_tensor(bbox_outside_weights, name='bbox_outside_weights')
     return rois, labels, bbox_targets, bbox_inside_weights, bbox_outside_weights
 
+
+
+
 def _proposal_target_layer_py(rpn_rois, gt_boxes, _num_classes):
     """
     Assign object detection proposals to ground-truth targets. Produces proposal
@@ -60,12 +63,14 @@ def _proposal_target_layer_py(rpn_rois, gt_boxes, _num_classes):
         rois_per_image, _num_classes)
     rois = rois.reshape(-1, 5)
     labels = labels.reshape(-1) # labels은 왜 one hot 으로  바꾸지 않는거지 --> sparse 여서..
+
     bbox_targets = bbox_targets.reshape(-1, _num_classes * 4) # 코드가 겹치는데 왜 있는지 모르겠다.
     bbox_inside_weights = bbox_inside_weights.reshape(-1, _num_classes * 4)
     bbox_outside_weights = np.array(bbox_inside_weights > 0).astype(np.float32)
 
-
     return np.float32(rois), labels, bbox_targets, bbox_inside_weights, bbox_outside_weights
+
+
 
 def _get_bbox_regression_labels(bbox_target_data, num_classes):
     """Bounding-box regression targets (bbox_target_data) are stored in a
@@ -96,8 +101,6 @@ def _compute_targets(ex_rois, gt_rois, labels):
     assert gt_rois.shape[1] == 4
 
     targets = bbox_transform.bbox_transform(ex_rois, gt_rois)
-
-
     if cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED: #default False
 
         # Optionally normalize targets by a precomputed mean and stdev
@@ -135,9 +138,9 @@ def _sample_rois(all_rois, gt_boxes, fg_rois_per_image, rois_per_image, num_clas
     bg_inds = np.where((max_overlaps < cfg.TRAIN.BG_THRESH_HI) & (max_overlaps >= cfg.TRAIN.BG_THRESH_LO))[0]
     # Compute number of background RoIs to take from this image (guarding
     # against there being fewer than desired)
+
     bg_rois_per_this_image = rois_per_image - fg_rois_per_this_image
     bg_rois_per_this_image = min(bg_rois_per_this_image, bg_inds.size)
-
     if bg_rois_per_this_image > len(fg_inds) *3 : # bg 가 fg 보다 3배 크면 fg 의 3배만큼만 추출한다
         bg_rois_per_this_image = len(fg_inds)* 3
 
@@ -149,7 +152,6 @@ def _sample_rois(all_rois, gt_boxes, fg_rois_per_image, rois_per_image, num_clas
         bg_inds = npr.choice(bg_inds, size=bg_rois_per_this_image, replace=False)
     # The indices that we're selecting (both fg and bg)
     keep_inds = np.append(fg_inds, bg_inds)
-
     # Select sampled values from various arrays:
     labels = labels[keep_inds]
     # Clamp labels for the background RoIs to 0
@@ -157,9 +159,6 @@ def _sample_rois(all_rois, gt_boxes, fg_rois_per_image, rois_per_image, num_clas
     rois = all_rois[keep_inds]
 
 
-
     bbox_target_data = _compute_targets(rois[:, 1:5], gt_boxes[gt_assignment[keep_inds], :4], labels)
-
     bbox_targets, bbox_inside_weights = _get_bbox_regression_labels(bbox_target_data, num_classes)
-
     return labels, rois, bbox_targets, bbox_inside_weights

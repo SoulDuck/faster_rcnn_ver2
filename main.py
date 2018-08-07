@@ -1,7 +1,7 @@
 #-*- coding:utf-8 -*-
 import tensorflow as tf
 import numpy as np
-from utils import next_img_gtboxes , draw_rectangles , non_maximum_supression , draw_rectangles_fastrcnn
+from utils import next_img_gtboxes , draw_rectangles , non_maximum_supression , draw_rectangles_fastrcnn , draw_rectangles_ptl
 from anchor_target_layer import anchor_target
 from convnet import define_placeholder , simple_convnet , rpn_cls_layer , rpn_bbox_layer , sess_start , optimizer ,rpn_cls_loss , rpn_bbox_loss ,bbox_loss
 from proposal_layer import inv_transform_layer , inv_transform_layer_fastrcnn
@@ -47,16 +47,23 @@ anchor_scales = [3, 4, 5]
 # INV target_inv_blobs_op OP = return to the original Coordinate (indices )
 inv_blobs_op  , target_inv_blobs_op = inv_transform_layer(rpn_bbox_pred ,  cfg_key = phase_train , \
                                         _feat_stride = _feat_stride , anchor_scales =anchor_scales , indices = indice_op)
+
 # Region of Interested
 roi_blobs_op, roi_scores_op , roi_blobs_ori_op ,roi_scores_ori_op  , roi_softmax_op = \
     roi.roi_proposal(rpn_cls , rpn_bbox_pred , im_dims , _feat_stride , anchor_scales ,is_training=True)
 # Fast rcnn 을 학습시킬 roi을 추출합니다
 ptl_rois_op, ptl_labels_op, ptl_bbox_targets_op, ptl_bbox_inside_weights_op, ptl_bbox_outside_weights_op = \
     proposal_target_layer(roi_blobs_op , gt_boxes , _num_classes= n_classes ) # ptl = Proposal Target Layer
+
 fast_rcnn_cls_logits , fast_rcnn_bbox_logits = \
     fast_rcnn(top_conv , ptl_rois_op , im_dims , eval_mode=False , num_classes=n_classes , phase_train = phase_train)
 
-fast_rcnn_blobs_op = inv_transform_layer_fastrcnn(ptl_rois_op , fast_rcnn_bbox_logits)
+
+inv_ptl_rois_op = inv_transform_layer_fastrcnn(ptl_rois_op , ptl_bbox_targets_op)
+fast_rcnn_blobs_op = inv_transform_layer_fastrcnn(ptl_rois_op , ptl_bbox_targets_op)
+# 임시로 되돌려 만들어 본다 , ptl 은 추천된 박스 영상과 동일해야 한다.
+
+
 # FAST RCNN COST
 fr_cls_loss_op = fast_rcnn_cls_loss(fast_rcnn_cls_logits , ptl_labels_op)
 fr_bbox_loss_op = fast_rcnn_bbox_loss(fast_rcnn_bbox_logits ,ptl_bbox_targets_op , ptl_bbox_inside_weights_op , ptl_bbox_outside_weights_op )
@@ -80,7 +87,6 @@ for i in range(2, max_iter):
     rpn_cls_score=np.zeros([1,int(math.ceil(h/8.)),int(math.ceil(w/8.)),512])
     rpn_labels, rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights, bbox_targets, bbox_inside_weights, bbox_outside_weights = anchor_target(
         rpn_cls_score=rpn_cls_score, gt_boxes=src_gt_boxes, im_dims=src_im_dims, _feat_stride=_feat_stride,anchor_scales=anchor_scales)
-
     indices=np.where([np.reshape(rpn_labels,[-1])>0])[1]
     src_img=src_img.reshape([1]+list(np.shape(src_img))+[1])
     feed_dict = {x_: src_img, im_dims: src_im_dims, gt_boxes: src_gt_boxes, phase_train: True,
@@ -93,17 +99,20 @@ for i in range(2, max_iter):
     rpn_labels,cls_cost, bbox_cost  ,rpn_cls_value, A, B,diff, C, D ,E ,F , roi_blobs ,roi_scores  , target_inv_blobs = sess.run(
         fetches=[rpn_labels_op,rpn_cls_loss_op, rpn_bbox_loss_op, rpn_cls, A_op, B_op, diff_op, C_op, D_op, E_op, F_op,
                  roi_blobs_op, roi_scores_op, target_inv_blobs_op], feed_dict=feed_dict)
+
     roi_blobs_ori, roi_scores_ori ,roi_softmax= sess.run(fetches=[roi_blobs_ori_op , roi_scores_ori_op  ,roi_softmax_op], feed_dict=feed_dict)
-    ptl_rois, ptl_labels, plt_bbox_targets, ptl_bbox_inside_weights, ptl_bbox_outside_weights = sess.run(
+    ptl_rois, ptl_labels, ptl_bbox_targets, ptl_bbox_inside_weights, ptl_bbox_outside_weights = sess.run(
         fetches=[ptl_rois_op, ptl_labels_op, ptl_bbox_targets_op, ptl_bbox_inside_weights_op,
                  ptl_bbox_outside_weights_op], feed_dict=feed_dict)
     fr_cls_loss , fr_bbox_loss = sess.run(fetches=[fr_cls_loss_op ,fr_bbox_loss_op] , feed_dict=feed_dict)
     fast_rcnn_cls, fast_rcnn_blobs = sess.run(fetches=[ fast_rcnn_cls_logits, fast_rcnn_blobs_op], feed_dict=feed_dict)
+    inv_ptl_rois = sess.run(fetches=[inv_ptl_rois_op], feed_dict=feed_dict)
+    inv_ptl_rois = np.squeeze(inv_ptl_rois)
 
     _ = sess.run(fetches=[train_op], feed_dict=feed_dict)
     pos_blobs=roi_blobs[np.where([roi_scores > 0.5])[1]]
 
-    if i % 55000 == 0:
+    if i % 10 == 0:
         print 'POS BBOX \t', pos_blobs
         print 'ROI SCORE \t', np.shape(roi_scores)
         print 'ROI BLOBS \t', np.shape(roi_blobs)
@@ -153,15 +162,17 @@ for i in range(2, max_iter):
         # 겹치는 영역하고 , NMS 을 적용하지 않은 ROI 
         pos_indices=np.where([roi_scores_ori>0.5])[1]
         # NMS
-        
         roi_blobs 에 NMS 가 적용 되어 있다
         roi_Scores 는 NMS가 적용된 좌표에 대응하는 확률값이다
-        target_inv_blobs 는 blobs을 
+        target_inv_blobs 는 blobs 
         """
         pos_indices = np.where([roi_scores > 0.5])[1]
+        #draw_rectangles(src_img, roi_blobs[:, :], roi_scores, target_inv_blobs, None, savepath_roi, color='r')
 
-        draw_rectangles(src_img, roi_blobs[:, :], roi_scores, target_inv_blobs, None, savepath_roi, color='r')
-        draw_rectangles_fastrcnn(src_img ,fast_rcnn_blobs, ptl_labels , savepath='./result_fastrcnn_roi/{}.png'.format(i) )
+        draw_rectangles_fastrcnn(src_img, fast_rcnn_blobs, ptl_labels,
+                                 savepath='./result_fastrcnn_roi/{}.png'.format(i))
+        draw_rectangles_ptl(src_img, ptl_rois, fast_rcnn_blobs, ptl_labels , savepath=savepath_roi )
+
 
     sys.stdout.write('\r Progress {} {}'.format(i,max_iter))
     sys.stdout.flush()

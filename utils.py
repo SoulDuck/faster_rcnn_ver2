@@ -27,7 +27,7 @@ def next_img_gtboxes(image_idx):
     if np.max(img) > 1:
         img = img / 255.
     return img , gt_bbox
-def non_maximum_supression( dets, thresh):
+def non_maximum_supression(dets, thresh):
     x1 = dets[:, 0]
     y1 = dets[:, 1]
     x2 = dets[:, 2]
@@ -91,8 +91,53 @@ def draw_rectangles_fastrcnn(img , bboxes , true_classes  , savepath):
 
 
 
+def draw_rectangles_ptl(img,ptl_bbox , inv_ptl_bbox , ptl_labels , savepath):
+    bg_indices = np.where([ptl_labels == 0])[-1]
+    fg_indices = np.where([ptl_labels != 0])[-1]
+    bg_bboxes = ptl_bbox[bg_indices]
+    fg_bboxes = ptl_bbox[fg_indices]
+    h, w = np.shape(img)
+    ax = plt.axes()
+    plt.imshow(img)
+
+    for box in fg_bboxes[:,1:] :
+        x1, y1, x2, y2= box  # x1 ,y1 ,x2 ,y2
+        if x1 >0 and y1 >0 and x2 > 0 and y2 > 0 and x2 > x1 and y2 > y1 and w > x2 and y2 < h :
+            rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor='b', facecolor='none')
+            ax.add_patch(rect)
+        else:
+            continue
+
+    plt.savefig(savepath.replace('roi' , 'ptl_fg_roi'))
+    plt.close()
+
+    ax = plt.axes()
+    plt.imshow(img)
+    for box in bg_bboxes[:,1:] :
+        x1, y1, x2, y2= box  # x1 ,y1 ,x2 ,y2
+        if x1 >0 and y1 >0 and x2 > 0 and y2 > 0 and x2 > x1 and y2 > y1 and w > x2 and y2 < h :
+            rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor='r', facecolor='none')
+            ax.add_patch(rect)
+        else:
+            continue
+    plt.savefig(savepath.replace('roi' , 'ptl_bg_roi'))
+    plt.close()
 
 
+    ax = plt.axes()
+    plt.imshow(img)
+    print np.shape(inv_ptl_bbox)
+    for box in inv_ptl_bbox[:,:] :
+        x1, y1, x2, y2= box  # x1 ,y1 ,x2 ,y2
+        if x1 >0 and y1 >0 and x2 > 0 and y2 > 0 and x2 > x1 and y2 > y1 and w > x2 and y2 < h :
+            rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor='g', facecolor='none')
+            ax.add_patch(rect)
+        else:
+            continue
+
+
+    plt.savefig(savepath.replace('roi' , 'ptl_inv_roi'))
+    plt.close()
 
 def draw_rectangles(img ,bboxes ,scores , anchors, roi_nms_bbox , savepath , color):
     ax = plt.axes()
@@ -100,6 +145,7 @@ def draw_rectangles(img ,bboxes ,scores , anchors, roi_nms_bbox , savepath , col
     h,w=np.shape(img)
     pos_bboxes_indices = np.where([scores >= 0.5])[1]
     neg_bboxes_indices = np.where([scores < 0.5])[1]
+
     pos_bboxes=bboxes[pos_bboxes_indices]
     pos_bboxes = pos_bboxes[:,:]
     neg_bboxes = bboxes[neg_bboxes_indices]
@@ -114,6 +160,7 @@ def draw_rectangles(img ,bboxes ,scores , anchors, roi_nms_bbox , savepath , col
             ax.add_patch(rect)
         else:
             continue
+
     plt.savefig(savepath.replace('roi' , 'pos_roi'))
     plt.close()
 
@@ -136,7 +183,6 @@ def draw_rectangles(img ,bboxes ,scores , anchors, roi_nms_bbox , savepath , col
     plt.imshow(img)
     h,w=np.shape(img)
     for box in anchors:
-
         x1, y1, x2, y2 = box  # x1 ,y1 ,x2 ,y2
         if x1 > 0 and y1 > 0 and x2 > 0 and y2 > 0 and x2 > x1 and y2 > y1 and w > x2 and y2 < h:
             rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2, edgecolor='g', facecolor='none')
@@ -161,8 +207,6 @@ def draw_rectangles(img ,bboxes ,scores , anchors, roi_nms_bbox , savepath , col
                 continue
         plt.savefig(savepath.replace('roi', 'nms_roi'))
         plt.close()
-
-
 
 if '__main__' == __name__:
     img , gt_boxes =next_img_gtboxes(image_idx=1)
